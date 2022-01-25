@@ -57,9 +57,10 @@ noise_u = np.identity(sys_dim * bond_dim, dtype=complex)
 
 lamdas = initialized_lamdas_tn(m, noise_u, rho_e)
 
-# e_edgs = edges_in_lamdas(lamdas, m)
-
-control_ten = gen_control_ten(rho_s, m, proj_O, clifford_list)
+rand_clifford = []
+for i in range(m):
+    rand_clifford.append(clifford_list[randint(0,23)])
+control_ten = gen_control_ten(rho_s, m, proj_O, rand_clifford)
 
 # -------------------- Generate the F_exp here -------------
 F_exp = 0.7*np.ones(m)
@@ -84,8 +85,8 @@ for k in range(moves):
         # This part has some redundent calculations, some F_pn did not change every time also they might not contribute to the cost func. But it will make things more complex.
         # Take the lamdas of sequence depth j and transform to order 2 tensor formate to calculate the analytical F.
         noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(m-j,m+2)))
-        analytical_F = non_Markovian_theory_Fm(noise_u, proj_O, rho, I, sys_dim)
-        F[k,j-1] = analytical_F.theory_Fm(j)
+        analytical_F = non_Markovian_theory_Fm(proj_O, rho, I, sys_dim)
+        F[k,j-1] = analytical_F.theory_Fm(j, noise_u[j-1])
         
             
     # math: beta_{n} tilde_Theta_{n}^{i, i-1}
@@ -107,13 +108,20 @@ for k in range(moves):
             noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(pn,m+2)))
             tilde_lam = initialized_lamdas_tn(pn, noise_u, rho_e)
             # Take the gates for tilde_Theta(pn)
-            tilde_ctr = control_ten[pn+1:-(pn+2)]
-            tmp_ctr = np.identity(2, dtpe=complex)
+            Gfin_dg_axis = control_ten[m-pn].axis_names
+            Gfin_axis = control_ten[-(m-pn+2)].axis_names
+            tilde_ctr = control_ten[m-pn+1:-(m-pn+2)]
+            M_axis = ['z\''+str(pn+1), 's'+str(pn+1)]
+            M = tn.Node(proj_O, name='M', axis_names=M_axis)
+            tmp_ctr_dg = np.identity(2, dtype=complex)
             for ctr_l in range(pn):
-                tmp_ctr = np.conj(tilde_ctr[ctr_l].T) @ tmp_ctr
-            tilde_ctr.insert(0, tmp_ctr)
-            tilde_ctr.append(np.conj(tmp_ctr.T))
-            tilde_ctr.append(proj_O)
+                tmp_ctr_dg = np.conj(tilde_ctr[ctr_l].tensor.T) @ tmp_ctr_dg
+            tmp_ctr = tn.Node(np.conj(tmp_ctr_dg.T), name='Gfin', axis_names=Gfin_axis)
+            tmp_ctr_dg = tn.Node(tmp_ctr_dg, name='Gfin_dg', axis_names=Gfin_dg_axis)
+            
+            tilde_ctr.insert(0, tmp_ctr_dg)
+            tilde_ctr.append(tmp_ctr)
+            tilde_ctr.append(M)
             
             # define the edges for tilde_Theta(pn)
             lam_ex_2 = edges_in_lamdas(tilde_lam, pn)
@@ -123,18 +131,12 @@ for k in range(moves):
         # print('ctr',ctr_ex_2)
         # After pop_no_contract_edg, the list will only contain the edges need to be contracted.
         pop_no_contract_edg(exclude_2, ctr_ex_2, lam_ex_2)
-        # print(len(ctr_ex_2))
-        print(len(lam_ex_2))
-        # print('lam edg')
-        print('ctr_ex', len(ctr_ex_2))
         tmp_theta_2 = contract_edge_list(lam_ex_2)
-        print(len(tmp_theta_2.edges))
         tmp_theta_2 = contract_edge_list(ctr_ex_2, name='theta2_'+str(pn))
         tmp_theta_2 = tn.contract_between(tilde_ctr[i], tmp_theta_2, name='theta2_'+str(pn), allow_outer_product=True)
-        print(tmp_theta_2.edges)
 
         tilde_theta_2 += beta * tmp_theta_2.tensor
-        # ============ reset non contracted edg to dangling one =========================
+        # ============ tilde_theta_2 is done, now a tilde_theta_1 =========================
         # tilde_theta_1 = contract_edge_list(lam_ex_1)
         # tilde_theta_1 = contract_edge_list(ctr_ex_1, name='theta1_'+str(m+1-l))
         

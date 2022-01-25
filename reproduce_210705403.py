@@ -130,9 +130,9 @@ class non_Markovian_theory_Fm():
             # print('tmp_state', tmp)
             # if i == 3:
             #     print('ooooooooooooooo')
-            
             # Put the state into unitary nonM map.
             tmp = self._non_Markovian_unitary_map(tmp)
+
             # print('unitary_nonM', tmp)
             # Apply (Ie tensor <s|) Lambda() (Ie tensor |s'>)
             tmp = np.kron(self.I, np.conj(self.ket[int(s[1])].reshape(1,2))) @ tmp @ np.kron(self.I, self.ket[int(s[0])].reshape(2,1))
@@ -150,7 +150,7 @@ class non_Markovian_theory_Fm():
     def _non_Markovian_unitary_map(self, rho):
         return self.u @ rho @ np.conj(self.u).T
         
-def sequence_with_unitary_noise(m, rho, noise_u):
+def sequence_with_unitary_noise(m, rho, noise_u, I):
     # apply unitary noise in the sequence
     tmp_rho = rho
     inver_op = np.eye(2)
@@ -165,11 +165,11 @@ def Markovianised_map(rho_e, rho_s, noise_u):
     # Input the state of environment, system and non-MArkovian noise, outputs the corresponding Markovinaised noise map in Eq.16.
     # Calculate Eq.16 to obtain A, B (Eq.14)
     # M_noise_u = noise_u * np.kron(rho_e, rho_s) * np.conj(noise_u).T
-    M_noise_u = non_Markovian_unitary_map(noise_u, np.kron(rho_e, rho_s))
+    M_noise_u = non_Markovian_unitary_map(np.kron(rho_e, rho_s), noise_u)
     M_noise_u = np.trace(M_noise_u.reshape(2,2,2,2), axis1=0, axis2=2)
     return M_noise_u
 
-def non_Markovian_unitary_map(noise_u, rho):
+def non_Markovian_unitary_map(rho, noise_u):
     return noise_u @ rho @ np.conj(noise_u).T
     
 def trace_Markovianised(noise_u):
@@ -226,10 +226,10 @@ if __name__ == "__main__":
     
     for m in range(1, M+1):
         for i in range(sample_size):
-            tmp_rho, inver_op = sequence_with_unitary_noise(m, rho, noise_u)
+            tmp_rho, inver_op = sequence_with_unitary_noise(m, rho, noise_u, I)
             tmp_rho = np.kron(I, inver_op) @ tmp_rho @ np.conj(np.kron(I, inver_op)).T
             # final_state = noise_u @ tmp_rho @ np.conj(noise_u).T
-            final_state = non_Markovian_unitary_map(noise_u, tmp_rho)
+            final_state = non_Markovian_unitary_map(tmp_rho, noise_u)
             f_sys_state = np.trace(final_state.reshape(2,2,2,2), axis1=0, axis2=2)
             fm[i] = np.trace(proj_O @ f_sys_state).real
             
@@ -257,8 +257,8 @@ if __name__ == "__main__":
     # nonM_theory_Fm  = non_Markovian_theory_Fm(np.kron(I,I), proj_O, rho, I, ds)
     # theory_Fm = nonM_theory_Fm.theory_Fm(3)
     theory_Fm = np.zeros(M)
-    Am = np.zeros(M)
-    Bm = np.zeros(M)
+    # Am = np.zeros(M)
+    # Bm = np.zeros(M)
     for i in range(M):
         theory_Fm[i] = nonM_theory_Fm.theory_Fm(i)
     

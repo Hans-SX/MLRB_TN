@@ -4,8 +4,12 @@
 Created on Wed Jan 12 17:34:36 2022
 
 Edit the noise to be different for each step.
-
-The differences of class non_Markovian_theory_Fm from reproduce_210705403.py is the sequence_with_unitary_noise_list() make the noise_u: list.
+1/25
+class non_Markovian_theory_Fm is working now.
+sequence_with_unitary_noise_list() only take care the exp data, class non_Markovian_theory_Fm is for the nonM theoritical value.
+1/14
+The differences of class non_Markovian_theory_Fm from reproduce_210705403.py is the
+sequence_with_unitary_noise_list() make the noise_u: list.
 
 @author: sxyang
 """
@@ -24,8 +28,7 @@ import time
 #----------------------------------------------------
 
 class non_Markovian_theory_Fm():
-    def __init__(self, noise_u, proj_O, rho, I, ds):
-        self.u = noise_u
+    def __init__(self, proj_O, rho, I, ds):
         self.M = proj_O
         self.rho = rho
         self.e = np.trace(rho.reshape(2,2,2,2), axis1=1, axis2=3)
@@ -37,13 +40,14 @@ class non_Markovian_theory_Fm():
         self.ket = np.concatenate((ket_0, ket_1)).reshape(2,2)
         # Set self.ket as above so that I can have sum_b (I tensor |b><b|) with an index to pick one of ket_0 or ket_1.
         
-    def theory_Fm(self, m):
+    def theory_Fm(self, m, noise_u):
+        self.u = noise_u
         # Eq.(7)
         A_part = self._partially_depolar_A(self.rho, m)
         # print('A_part', A_part)
         B_part = self._completely_depolar_B(m)
         # print('B_part', B_part)
-        AB = self._non_Markovian_unitary_map(A_part + B_part, m-1)
+        AB = self._non_Markovian_unitary_map(A_part + B_part)
         # Tracing out E.
         AB = np.trace(AB.reshape(2,2,2,2), axis1=0, axis2=2)
         # print('m =', m)
@@ -73,12 +77,11 @@ class non_Markovian_theory_Fm():
 
         rho = rho_ab - np.kron(self.e, self.I/self.ds)
         M = 1
-        Am = self._map_E_IS(rho, M-1)
+        Am = self._map_E_IS(rho)
         # while loop start from m = 2, so i start from 1 rather than 0.
-        # ========= Note here, I feel M < m should be correct but last version is M <= m, maybe it did not affect the result too much?  0119, 22 ===================
-        while M < m:
+        while M <= m:
             # A2 = [(dollar1 - theta1) tensor I] (A1)...
-            Am = self._map_E_IS(Am, M)
+            Am = self._map_E_IS(Am)
             M += 1
             # print('Am', Am)
         
@@ -89,13 +92,13 @@ class non_Markovian_theory_Fm():
     def _completely_depolar_B(self, m):
         # Eq.9. The input should be rho and then tr_S(rho), but I am lazy.
         e = self.e
-        tmp = self._Theta_for_nonM_B(e, 0)
+        tmp = self._Theta_for_nonM_B(e)
         for i in range(1, m):
-            tmp = self._Theta_for_nonM_B(tmp, i)
+            tmp = self._Theta_for_nonM_B(tmp)
         Bm = np.kron(tmp, self.I/self.ds)
         return Bm
         
-    def _map_E_IS(self, e, noise_n):
+    def _map_E_IS(self, e):
         map_E_IS = np.zeros((4,4), dtype=complex)
         tmpe = np.zeros((2,2), dtype=complex)
         i = 0
@@ -107,19 +110,19 @@ class non_Markovian_theory_Fm():
             # print(np.kron(self.I, self.ket[int(b[0])].reshape(2,1)).shape)
             tmpe = np.kron(self.I, np.conj(self.ket[int(b[1])].reshape(1,2))) @ e @ np.kron(self.I, self.ket[int(b[0])].reshape(2,1))
             # print('After')
-            tmpe = self._D_minus_T(tmpe, noise_n)
+            tmpe = self._D_minus_T(tmpe)
             tmp_s = np.kron(tmpe, np.kron(self.ket[int(b[0])].reshape(2,1), np.conj(self.ket[int(b[1])].reshape(1,2))))
             map_E_IS += tmp_s
             i += 1
         return map_E_IS
     
-    def _D_minus_T(self, e, noise_n):
-        tmp_d = self._Dollar_for_nonM_A(e, noise_n)
-        tmp_t = self._Theta_for_nonM_B(e, noise_n)
+    def _D_minus_T(self, e):
+        tmp_d = self._Dollar_for_nonM_A(e)
+        tmp_t = self._Theta_for_nonM_B(e)
         d_minus_t = tmp_d - tmp_t
         return d_minus_t
         
-    def _Dollar_for_nonM_A(self, e, noise_n):
+    def _Dollar_for_nonM_A(self, e):
         # This part differ from Pedro's.
         # Eq.10
         dollar = np.zeros((2,2), dtype=complex)
@@ -135,9 +138,9 @@ class non_Markovian_theory_Fm():
             # print('tmp_state', tmp)
             # if i == 3:
             #     print('ooooooooooooooo')
-            
             # Put the state into unitary nonM map.
-            tmp = self._non_Markovian_unitary_map(tmp, noise_n)
+            tmp = self._non_Markovian_unitary_map(tmp)
+
             # print('unitary_nonM', tmp)
             # Apply (Ie tensor <s|) Lambda() (Ie tensor |s'>)
             tmp = np.kron(self.I, np.conj(self.ket[int(s[1])].reshape(1,2))) @ tmp @ np.kron(self.I, self.ket[int(s[0])].reshape(2,1))
@@ -147,13 +150,13 @@ class non_Markovian_theory_Fm():
             i += 1
         return dollar
 
-    def _Theta_for_nonM_B(self, e, noise_n):
+    def _Theta_for_nonM_B(self, e):
         # Eq.11
-        Theta = np.trace(self._non_Markovian_unitary_map(np.kron(e, self.I/self.ds), noise_n).reshape(2,2,2,2), axis1=1, axis2=3)
+        Theta = np.trace(self._non_Markovian_unitary_map(np.kron(e, self.I/self.ds)).reshape(2,2,2,2), axis1=1, axis2=3)
         return Theta
         
-    def _non_Markovian_unitary_map(self, rho, noise_n):
-        return self.u[noise_n] @ rho @ np.conj(self.u[noise_n]).T       
+    def _non_Markovian_unitary_map(self, rho):
+        return self.u @ rho @ np.conj(self.u).T
 
         
 def sequence_with_unitary_noise_list(m, rho, noise_u):
@@ -173,11 +176,11 @@ def Markovianised_map(rho_e, rho_s, noise_u):
     # Input the state of environment, system and non-MArkovian noise, outputs the corresponding Markovinaised noise map in Eq.16.
     # Calculate Eq.16 to obtain A, B (Eq.14)
     # M_noise_u = noise_u * np.kron(rho_e, rho_s) * np.conj(noise_u).T
-    M_noise_u = non_Markovian_unitary_map(noise_u, np.kron(rho_e, rho_s))
+    M_noise_u = non_Markovian_unitary_map(np.kron(rho_e, rho_s), noise_u)
     M_noise_u = np.trace(M_noise_u.reshape(2,2,2,2), axis1=0, axis2=2)
     return M_noise_u
 
-def non_Markovian_unitary_map(noise_u, rho):
+def non_Markovian_unitary_map(rho, noise_u):
     return noise_u @ rho @ np.conj(noise_u).T
     
 def trace_Markovianised(noise_u):
@@ -202,20 +205,21 @@ if __name__ == "__main__":
     hy = -1.05
     delta = 0.03
     
-    M = 20
+    M = 10
     n = 15
     # Non-Markovian noise, assume unitary.
     noise_u = []
-    for i in range(M-n):
-        noise_u.append(np.identity(4, dtype=complex))
+    # for i in range(M-n):
+    #     noise_u.append(np.identity(4, dtype=complex))
     
     X = np.array([[0, 1],[1, 0]], dtype=complex)
     Y = np.array([[0, -1j],[1j, 0]], dtype=complex)
     Z = np.array([[1, 0],[0, -1]], dtype=complex)
     H = J * np.kron(X,X) + hx * (np.kron(X, I) + np.kron(I, X)) + hy * (np.kron(Y, I) + np.kron(I, Y))
-    for i in range(M-n, M):
+    # for i in range(M-n, M):
+    #     noise_u.append(linalg.expm(-1j*delta*H))
+    for i in range(M):
         noise_u.append(linalg.expm(-1j*delta*H))
-    
     seed = 2
     np.random.seed(seed)
     time_mark = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
@@ -240,7 +244,7 @@ if __name__ == "__main__":
             tmp_rho, inver_op = sequence_with_unitary_noise_list(m, rho, noise_u[:m])
             tmp_rho = np.kron(I, inver_op) @ tmp_rho @ np.conj(np.kron(I, inver_op)).T
             # final_state = noise_u @ tmp_rho @ np.conj(noise_u).T
-            final_state = non_Markovian_unitary_map(noise_u[m-1], tmp_rho)
+            final_state = non_Markovian_unitary_map(tmp_rho, noise_u[m-1])
             f_sys_state = np.trace(final_state.reshape(2,2,2,2), axis1=0, axis2=2)
             fm[i] = np.trace(proj_O @ f_sys_state).real
             
@@ -255,14 +259,14 @@ if __name__ == "__main__":
     A = np.trace(proj_O * Markovianised_map(rho_e, rho_s - I/ds, noise_u[-1])).real
     B = np.trace(proj_O * Markovianised_map(rho_e, I/ds, noise_u[-1])).real
     
-    nonM_theory_Fm  = non_Markovian_theory_Fm(noise_u[-1], proj_O, rho, I, ds)
+    nonM_theory_Fm  = non_Markovian_theory_Fm(proj_O, rho, I, ds)
     # nonM_theory_Fm  = non_Markovian_theory_Fm(np.kron(I,I), proj_O, rho, I, ds)
     # theory_Fm = nonM_theory_Fm.theory_Fm(3)
     theory_Fm = np.zeros(M)
     Am = np.zeros(M)
     Bm = np.zeros(M)
     for i in range(M):
-        theory_Fm[i] = nonM_theory_Fm.theory_Fm(i)
+        theory_Fm[i] = nonM_theory_Fm.theory_Fm(i, noise_u[i])
     
     m = np.array(range(1, 1 + M))
     plt.plot(range(1, M+1), Fm, 'o', label='data')

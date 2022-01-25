@@ -51,21 +51,21 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
     lamdas.append(lamdas.pop(ind_rhoe))
     return lamdas
 
-def gen_control_ten(rho_s, m, proj_O, clifford_list):
+def gen_control_ten(rho_s, m, proj_O, rand_clifford):
     control_ten = [tn.Node(rho_s, name='rho_s', axis_names=['s\'0', 'z0'])]
     inv_m = np.identity(2, dtype=complex)
     for i in range(m):
-        tmp = clifford_list[randint(0,23)]
+        tmp = rand_clifford[i]
         g = tn.Node(tmp, name='G'+str(i+1), axis_names = ['s\''+str(i+1), 's'+str(i)])
         g_dg = tn.Node(np.conj(tmp.T), name='G_dg'+str(i+1), axis_names = ['z\''+str(i), 'z'+str(i+1)])
         control_ten.insert(0, g)
         control_ten.append(g_dg)
         inv_m = np.conj(tmp.T) @ inv_m
-    final_g = tn.Node(np.conj(inv_m.T), name='Gfin', axis_names = ['z\''+str(m), 'z'+str(m+1)])
-    final_g_dg = tn.Node(inv_m, name='Gfin_dg', axis_names = ['s\''+str(m+1), 's'+str(m)])
+    final_g_dg = tn.Node(np.conj(inv_m.T), name='Gfin_dg', axis_names = ['z\''+str(m), 'z'+str(m+1)])
+    final_g = tn.Node(inv_m, name='Gfin', axis_names = ['s\''+str(m+1), 's'+str(m)])
     M = tn.Node(proj_O, name='M', axis_names = ['z\''+str(m+1), 's'+str(m+1)])
-    control_ten.insert(0, final_g_dg)
-    control_ten.append(final_g)
+    control_ten.insert(0, final_g)
+    control_ten.append(final_g_dg)
     control_ten.append(M)
     return control_ten
 
@@ -134,7 +134,7 @@ def pop_out(edg_list, pop_list):
     # print('---------')
     for i in range(len(pop_list)-1,-1,-1):
         # print(len(edg_list))
-        edg_list.pop(i)
+        edg_list.pop(i).disconnect()
 
 def rX(theta):
     X = np.array([[0, 1], [1, 0]])
