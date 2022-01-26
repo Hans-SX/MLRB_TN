@@ -15,11 +15,13 @@ import tensornetwork as tn
 
 def order2_to_4(lamda, sys_dim=2, bond_dim=2):
     lamda = lamda.reshape(sys_dim, bond_dim, sys_dim, bond_dim)
-    lamda= np.swapaxes(lamda, 0, 1)
+    lamda= np.swapaxes(lamda, -2, -1)
+    # lamda= np.swapaxes(lamda, 0, 1)
     return lamda
 
 def order4_to_2(lamda, sys_dim=2, bond_dim=2):
-    lamda= np.swapaxes(lamda, 0, 1)
+    lamda= np.swapaxes(lamda, -2, -1)
+    # lamda= np.swapaxes(lamda, 0, 1)
     lamda = lamda.reshape(sys_dim*bond_dim, sys_dim*bond_dim)
     return lamda
 
@@ -48,6 +50,7 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
             lamdas.append(lam_dg)
             
     ind_rhoe = int((2*(m+2)+1)/2)
+    # Shuffle the rho_e to the end of the list.
     lamdas.append(lamdas.pop(ind_rhoe))
     return lamdas
 
@@ -60,7 +63,9 @@ def gen_control_ten(rho_s, m, proj_O, rand_clifford):
         g_dg = tn.Node(np.conj(tmp.T), name='G_dg'+str(i+1), axis_names = ['z\''+str(i), 'z'+str(i+1)])
         control_ten.insert(0, g)
         control_ten.append(g_dg)
-        inv_m = np.conj(tmp.T) @ inv_m
+        
+        # the order of the inverse matters, previously, I swaped them thus get the wrong values.
+        inv_m = inv_m @ np.conj(tmp.T)
     final_g_dg = tn.Node(np.conj(inv_m.T), name='Gfin_dg', axis_names = ['z\''+str(m), 'z'+str(m+1)])
     final_g = tn.Node(inv_m, name='Gfin', axis_names = ['s\''+str(m+1), 's'+str(m)])
     M = tn.Node(proj_O, name='M', axis_names = ['z\''+str(m+1), 's'+str(m+1)])
@@ -99,11 +104,16 @@ def edges_btw_ctr_nois(control_ten, lamdas, m):
         edge_list.append(control_ten[i+ind_rhos]['z\''+str(i-1)] ^ lamdas[i+ind_rhos]['z\''+str(i-1)])
         edge_list.append(control_ten[i+ind_rhos]['z'+str(i)] ^ lamdas[i+1+ind_rhos]['z'+str(i)])
     
+    # Not sure which edge of M should connect to lam_m+1 or lam_dg_m+1.
     edge_list.append(control_ten[-1]['z\''+str(m+1)] ^ lamdas[-2]['z\''+str(m+1)])
     edge_list.insert(0, control_ten[-1]['s'+str(m+1)] ^ lamdas[0]['s'+str(m+1)])
+    # edge_list.append(control_ten[-1]['z\''+str(m+1)] ^ lamdas[0]['s'+str(m+1)])
+    # edge_list.insert(0, control_ten[-1]['s'+str(m+1)] ^ lamdas[-2]['z\''+str(m+1)])
     return edge_list
     
 def contract_edge_list(edg_list, name=None):
+    # for i in edg_list:
+    #     tensor = tn.contract(i, name=name)
     for i in range(len(edg_list)-1, -1, -1):
         tensor = tn.contract(edg_list[i], name=name)
         edg_list.pop(i)

@@ -12,11 +12,13 @@ import numpy as np
 
 def order2_to_4(lamda, sys_dim=2, bond_dim=2):
     lamda = lamda.reshape(sys_dim, bond_dim, sys_dim, bond_dim)
-    lamda= np.swapaxes(lamda, 0, 1)
+    lamda= np.swapaxes(lamda, -2, -1)
+    # lamda= np.swapaxes(lamda, 0, 1)
     return lamda
 
 def order4_to_2(lamda, sys_dim=2, bond_dim=2):
-    lamda= np.swapaxes(lamda, 0, 1)
+    lamda= np.swapaxes(lamda, -2, -1)
+    # lamda= np.swapaxes(lamda, 0, 1)
     lamda = lamda.reshape(sys_dim*bond_dim, sys_dim*bond_dim)
     return lamda
 
