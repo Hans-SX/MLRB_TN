@@ -14,9 +14,10 @@ import tensornetwork as tn
 import matplotlib.pyplot as plt
 import time
 
-from utils_tn import initialized_lamdas_tn, gen_control_ten, edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list, not_contract_edgs, pop_no_contract_edg, order4_to_2, rX, rY
-from nonM_analytical_expression import non_Markovian_theory_Fm, non_Markovian_unitary_map, sequence_with_unitary_noise_list
-from reproduce_210705403 import sequence_with_unitary_noise
+from utils_tn import initialized_lamdas_tn, gen_control_ten, edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list, rX, rY
+
+def non_Markovian_unitary_map(rho, noise_u):
+    return noise_u @ rho @ np.conj(noise_u).T
 
 def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
     # apply unitary noise in the sequence
@@ -58,7 +59,7 @@ clifford_list = [np.identity(2, dtype=complex),
                 rY(1) @ rX(-1/2),
                 rX(-1/2) @ rY(1/2) @ rX(1/2)]
 
-M = 3
+M = 2
 
 X = np.array([[0, 1],[1, 0]], dtype=complex)
 Y = np.array([[0, -1j],[1j, 0]], dtype=complex)
