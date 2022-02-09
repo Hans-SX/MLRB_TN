@@ -3,6 +3,8 @@
 """
 Created on Tue Jan 25 10:43:57 2022
 
+Don't try on laptop again, it's annoying when it freezed.
+
 @author: sxyang
 """
 

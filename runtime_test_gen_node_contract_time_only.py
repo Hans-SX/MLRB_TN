@@ -4,6 +4,8 @@
 Created on Wed Jan 12 15:20:43 2022
 
 Only test on cloud, my notebook has not enough ram.
+There is a better version, this one only estimate the contraction time.
+Another also check the correctness.
 
 @author: sxyang
 """
@@ -14,7 +16,7 @@ import time
 
 a = np.identity(2, dtype=complex)
 b = np.identity(2, dtype=complex)
-m = 5
+m = 2
 n = 4*m+4 - 1
 tic_make = time.perf_counter()
 for i in range(n):
