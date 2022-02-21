@@ -107,8 +107,7 @@ def edges_btw_ctr_nois(control_ten, lamdas, m):
     # Not sure which edge of M should connect to lam_m+1 or lam_dg_m+1.
     edge_list.append(control_ten[-1]['z\''+str(m+1)] ^ lamdas[-2]['z\''+str(m+1)])
     edge_list.insert(0, control_ten[-1]['s'+str(m+1)] ^ lamdas[0]['s'+str(m+1)])
-    # edge_list.append(control_ten[-1]['z\''+str(m+1)] ^ lamdas[0]['s'+str(m+1)])
-    # edge_list.insert(0, control_ten[-1]['s'+str(m+1)] ^ lamdas[-2]['z\''+str(m+1)])
+
     return edge_list
     
 def contract_edge_list(edg_list, name=None):
@@ -127,23 +126,22 @@ def pop_no_contract_edg(exclude, ctr_edg, lam_edg):
         pop_out(lam_edg, pop_e_edgs)
         pop_out(ctr_edg, pop_s_edgs)
 
+
 def not_contract_edgs(exclude_lams):
     # exclude_lams: a list of max length 2, indicates which nodes we don't contract.
-    # The higher order pop out first, so that they sill not affect the order of the remainings.
+    # Pop out in reverse order, so that they sill not affect the order of the remainings.
     if len(exclude_lams) == 2:
-        pop_e_edgs = [exclude_lams[0], exclude_lams[1], exclude_lams[1]+1]
-        pop_s_edgs = [2*exclude_lams[0], 2*exclude_lams[0]+1 , 2*exclude_lams[1], 2*exclude_lams[1]+1]
+        pop_e_edgs = [exclude_lams[1]+1, exclude_lams[1], exclude_lams[0]]
+        pop_s_edgs = [2*exclude_lams[1]+1, 2*exclude_lams[1], 2*exclude_lams[0]+1, 2*exclude_lams[0]]
     elif len(exclude_lams) == 1:
-        pop_e_edgs = [exclude_lams[0], exclude_lams[0]+1]
-        pop_s_edgs = [2*exclude_lams[0], 2*exclude_lams[0]+1]
+        pop_e_edgs = [exclude_lams[0]+1, exclude_lams[0]]
+        pop_s_edgs = [2*exclude_lams[0]+1, 2*exclude_lams[0]]
     else:
         print('Took at most exclude 2 nodes in this function.')
     return pop_s_edgs, pop_e_edgs
 
 def pop_out(edg_list, pop_list):
-    # print('---------')
-    for i in range(len(pop_list)-1,-1,-1):
-        # print(len(edg_list))
+    for i in pop_list:
         edg_list.pop(i).disconnect()
 
 def rX(theta):
@@ -156,7 +154,14 @@ def rY(theta):
     matrix = linalg.expm(-1j * theta * np.pi/2 * Y)
     return matrix
     
-
+if __name__ == '__main__':
+    test_L = L.copy()
+    test_tilde = tmp_theta_2.copy()
+    test_edg = []
+    for i in range(6):
+        test_edg.append(test_L[i] ^ test_tilde[i])
+    test_f = contract_edge_list(test_edg)
+    test_f
 '''
 class control_tensor():
     def __init__(self, m, sys_dim):
