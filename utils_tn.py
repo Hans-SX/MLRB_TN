@@ -118,6 +118,14 @@ def contract_edge_list(edg_list, name=None):
         edg_list.pop(i)
     return tensor
 
+# def contract_by_nodes(cont_ls):
+#     tensor = tn.contractors.auto(cont_ls, ignore_edge_order=True)
+    
+
+def contract_by_nodes(cont_ls, out_order, node_name):
+    tensor = tn.contractors.auto(cont_ls, output_edge_order=None, ignore_edge_order=True)
+    return tensor
+
 def pop_no_contract_edg(exclude, ctr_edg, lam_edg):
     if type(exclude) != type([]):
         print('exclude should be a list.')
