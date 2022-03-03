@@ -13,6 +13,7 @@ from random import randint
 import tensornetwork as tn
 
 from utils_tn import initialized_lamdas_tn, gen_control_ten, edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list, not_contract_edgs, pop_no_contract_edg, order4_to_2, rX, rY
+# from utils_tn import *
 from nonM_analytical_expression import non_Markovian_theory_Fm
 
         
@@ -108,6 +109,8 @@ for k in range(moves):
         exclude_1 = [i+1-l]
         beta = F_exp[pn-1] - F[k, pn-1]
         if pn == m:
+            lam_ex_2 = []
+            ctr_ex_2 = []
             tilde_ctr = control_ten.copy()
             lam_ex_2 = edges_in_lamdas(lamdas, m)
             ctr_ex_2 = edges_btw_ctr_nois(tilde_ctr, lamdas, m)
@@ -118,6 +121,8 @@ for k in range(moves):
             something went wrong here, pn == m, i=0 is fine.
             issues: it did not always return 1 for k>1 in the test case.
             '''
+            lam_ex_2 = []
+            ctr_ex_2 = []
             # Take the lamdas for tilde_Theta_(pn)
             noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(l, m+2)))
 
