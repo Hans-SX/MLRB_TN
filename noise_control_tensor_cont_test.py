@@ -10,13 +10,13 @@ Don't try on laptop again, it's annoying when it freezed.
 
 import numpy as np
 from scipy import linalg
-import random
 from random import randint
-import tensornetwork as tn
 import matplotlib.pyplot as plt
 import time
 
-from utils_tn import initialized_lamdas_tn, gen_control_ten, edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list, rX, rY
+from utils_tn import initialized_lamdas_tn, gen_control_ten
+from utils_tn import edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list
+from utils_tn import rX, rY, contract_by_nodes
 
 def non_Markovian_unitary_map(rho, noise_u):
     return noise_u @ rho @ np.conj(noise_u).T
@@ -96,8 +96,8 @@ rho_e = np.trace(rho.reshape(2,2,2,2), axis1=1, axis2=3)
 #====================================================
 #====================================================
 # # This part generate data and caculate ASF. To debug, don't need to run this part.
-sample_size = int(30)
-fm = np.zeros(sample_size)
+# sample_size = int(30)
+# fm = np.zeros(sample_size)
 Fm_exp = np.zeros(M)
 Fm_cont = np.zeros(M)
 # print('Setup state, projector, and some parameters.')
@@ -133,8 +133,9 @@ for m in range(1, M+1):
     edg_time_e = time.perf_counter()
     
     con_time_s = time.perf_counter()
-    tmp_F = contract_edge_list(e_edgs)
-    tmp_F = contract_edge_list(s_edgs, 'ASF')
+    tmp_F = contract_by_nodes(lamdas + control_ten, None, 'til_theta2')
+    # tmp_F = contract_edge_list(s_edgs)
+    # tmp_F = contract_edge_list(e_edgs, 'ASF')
     con_time_e = time.perf_counter()
     
     edg_time[m-1] = edg_time_e - edg_time_s
