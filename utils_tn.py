@@ -10,7 +10,6 @@ Control tensor follow Eq.B20 ~ B22 in RB_with_ML_0113_22 .
 
 import numpy as np
 from scipy import linalg
-from random import randint
 import tensornetwork as tn
 
 def order2_to_4(lamda, sys_dim=2, bond_dim=2):
