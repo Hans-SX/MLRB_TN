@@ -111,11 +111,12 @@ for k in range(moves):
         exclude_2 = [i-l, i+1-l]
         beta_pn = F_exp[pn-1] - F[k, pn-1]
         if pn == m:
-            tilde_ctr = control_ten.copy()
-            lam_ex_2 = edges_in_lamdas(lamdas, m)
+            tilde_ctr = control_ten
+            tilde_lam = lamdas
+            lam_ex_2 = edges_in_lamdas(tilde_lam, m)
+            # lam_ex_2 = edges_in_lamdas(lamdas, m)
             ctr_ex_2 = edges_btw_ctr_nois(tilde_ctr, lamdas, m)
-            tilde_lam = lamdas.copy()
-            tmp_ctr = control_ten.copy()
+            
         elif pn == 0:
              break
         else:
@@ -152,7 +153,7 @@ for k in range(moves):
 
         exclude_nodes_2 = [tilde_lam[exclude_2[0]]] + [tilde_lam[exclude_2[1]]]
         tilde_theta_2_ls = []
-        for n in lamdas:
+        for n in tilde_lam:
             if n not in exclude_nodes_2:
                 tilde_theta_2_ls.append(n)
         tilde_theta_2_ls = tilde_theta_2_ls + tilde_ctr
@@ -165,35 +166,35 @@ for k in range(moves):
         con_ls = [tilde_theta_2] + exclude_nodes_2
         test_f[k,pn-1] = contract_by_nodes(con_ls, None, 'f').tensor
 
-    if i+2 >= 1:
-        exclude_1 = [0] # always the left most node.
-        beta_1 = F_exp[m-(i+2)-1] - F[k, m-(i+2)-1]
-        # Take the lamdas for tilde_Theta_(pn)
-        noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(i+2, m+2)))
+    # if i+2 >= 1:
+    #     exclude_1 = [0] # always the left most node.
+    #     beta_1 = F_exp[m-(i+2)-1] - F[k, m-(i+2)-1]
+    #     # Take the lamdas for tilde_Theta_(pn)
+    #     noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(i+2, m+2)))
     
-        tilde_lam = initialized_lamdas_tn(m-(i+2), noise_u, rho_e)
-        # Take the gates for tilde_Theta(m-(i+2))
-        tilde_ctr = control_ten[(i+2)+1:-((i+2)+2)]
-        M_axis = ['z\''+str(m-(i+2)+1), 's'+str(m-(i+2)+1)]
-        M = tn.Node(proj_O, name='M', axis_names=M_axis)
+    #     tilde_lam = initialized_lamdas_tn(m-(i+2), noise_u, rho_e)
+    #     # Take the gates for tilde_Theta(m-(i+2))
+    #     tilde_ctr = control_ten[(i+2)+1:-((i+2)+2)]
+    #     M_axis = ['z\''+str(m-(i+2)+1), 's'+str(m-(i+2)+1)]
+    #     M = tn.Node(proj_O, name='M', axis_names=M_axis)
         
-        Gfin_axis = control_ten[i+2].axis_names
-        # Did not take the axis_names of Gfin_dg of control_ten,
-        # since tilde_ctr is shorter than it, and the axis_names should be continuous.
-        Gfin_dg_axis = control_ten[-((i+2)+2)].axis_names
-        tmp_ctr = np.identity(2, dtype=complex)
-        for ctr_l in range(i+2):
-            tmp_ctr = np.conj(tilde_ctr[ctr_l].tensor.T) @ tmp_ctr
-        tmp_ctr_dg = tn.Node(np.conj(tmp_ctr.T), name='Gfin_dg', axis_names=Gfin_dg_axis)
-        tmp_ctr = tn.Node(tmp_ctr, name='Gfin', axis_names=Gfin_axis)
+    #     Gfin_axis = control_ten[i+2].axis_names
+    #     # Did not take the axis_names of Gfin_dg of control_ten,
+    #     # since tilde_ctr is shorter than it, and the axis_names should be continuous.
+    #     Gfin_dg_axis = control_ten[-((i+2)+2)].axis_names
+    #     tmp_ctr = np.identity(2, dtype=complex)
+    #     for ctr_l in range(i+2):
+    #         tmp_ctr = np.conj(tilde_ctr[ctr_l].tensor.T) @ tmp_ctr
+    #     tmp_ctr_dg = tn.Node(np.conj(tmp_ctr.T), name='Gfin_dg', axis_names=Gfin_dg_axis)
+    #     tmp_ctr = tn.Node(tmp_ctr, name='Gfin', axis_names=Gfin_axis)
         
-        tilde_ctr.insert(0, tmp_ctr)
-        tilde_ctr.append(tmp_ctr_dg)
-        tilde_ctr.append(M)
+    #     tilde_ctr.insert(0, tmp_ctr)
+    #     tilde_ctr.append(tmp_ctr_dg)
+    #     tilde_ctr.append(M)
         
-        # define the edges for tilde_Theta(pn)
-        lam_ex_1 = edges_in_lamdas(tilde_lam, m-(i+2))
-        ctr_ex_1 = edges_btw_ctr_nois(tilde_ctr, tilde_lam, m-(i+2))
+    #     # define the edges for tilde_Theta(pn)
+    #     lam_ex_1 = edges_in_lamdas(tilde_lam, m-(i+2))
+    #     ctr_ex_1 = edges_btw_ctr_nois(tilde_ctr, tilde_lam, m-(i+2))
 
         # tilde_theta_2 += beta * tmp_theta_2.tensor
         # ============ tilde_theta_2 is done, now a tilde_theta_1 =========================
