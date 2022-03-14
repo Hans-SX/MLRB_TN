@@ -19,7 +19,7 @@ import numpy as np
 from numpy.linalg import inv
 from scipy.stats import unitary_group
 from scipy import linalg
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import time
 
 
@@ -268,13 +268,13 @@ if __name__ == "__main__":
     for i in range(M):
         theory_Fm[i] = nonM_theory_Fm.theory_Fm(i, noise_u[i])
     
-    m = np.array(range(1, 1 + M))
-    plt.plot(range(1, M+1), Fm, 'o', label='data')
-    plt.plot(range(1, M+1), A*p**m + B, '-', label=r'$F_m^{(M)}$')
-    plt.plot(range(1, M+1), theory_Fm, '-', label=r'$F_m$')
+    # m = np.array(range(1, 1 + M))
+    # plt.plot(range(1, M+1), Fm, 'o', label='data')
+    # plt.plot(range(1, M+1), A*p**m + B, '-', label=r'$F_m^{(M)}$')
+    # plt.plot(range(1, M+1), theory_Fm, '-', label=r'$F_m$')
     # plt.plot(range(1, M+1), Am, '-', label=r'$A_m$')
     # plt.plot(range(1, M+1), Bm, '-', label=r'$B_m$')
-    plt.legend()
+    # plt.legend()
     # # plt.title()
     # plt.xlabel('Sequence length')
     # plt.ylabel('Average sequence fidelity')

@@ -43,8 +43,8 @@ clifford_list = [ np.identity(2, dtype=complex),
                 rY(1) @ rX(-1/2),
                 rX(-1/2) @ rY(1/2) @ rX(1/2)]
 
-m = 4
-moves = 4
+m = 6
+moves = 10
 
 ket_0 = np.array([1,0], dtype=complex).reshape(2,1)
 ket_1 = np.array([0,1], dtype=complex).reshape(2,1)
@@ -71,8 +71,8 @@ F_exp = 0.7*np.ones(m)
 
 # ----------------------------------------------------------
 F = np.zeros((moves, m))
-# test_f = np.zeros((moves, m), dtype=complex)
-test_f_1 = np.zeros(moves, dtype=complex)
+test_f = np.zeros((moves, m))
+test_f_1 = np.zeros(moves)
 
 for k in range(moves):
     # When updating the lams, also updating the lam_dgs.
@@ -101,22 +101,23 @@ for k in range(moves):
     L_axis_names = list(map(lambda edg: edg.name, L_dangled))
     L = contract_by_nodes([lamdas[i], lamdas[i+1]], L_dangled, 'L')
     L_left = L.get_all_dangling()
-# print(F)
+    
     # math: beta_{n} tilde_Theta_{n}^{i, i-1}, i = m+1, m, ..., 1
     # tilde_Theta_{n}^{i, i-1} is a function takes n as input so, drop +1 here.
     # python: beta_{pn} tilde_Theta_{pn}^{i, i+1}, i = 0, ..., m
-#    tilde_theta_2 = np.zeros([2]*6, dtype=complex)
+    tilde_theta_2 = np.zeros([2]*6, dtype=complex)
 
     for l in range(i+1):
         pn = m-l
         exclude_2 = [i-l, i+1-l]
         beta_pn = F_exp[pn-1] - F[k, pn-1]
         if pn == m:
-            tilde_ctr = control_ten.copy()
-            lam_ex_2 = edges_in_lamdas(lamdas, m)
+            tilde_ctr = control_ten
+            tilde_lam = lamdas
+            lam_ex_2 = edges_in_lamdas(tilde_lam, m)
+            # lam_ex_2 = edges_in_lamdas(lamdas, m)
             ctr_ex_2 = edges_btw_ctr_nois(tilde_ctr, lamdas, m)
-            tilde_lam = lamdas.copy()
-            tmp_ctr = control_ten.copy()
+            
         elif pn == 0:
              break
         else:
@@ -152,7 +153,6 @@ for k in range(moves):
             ctr_ex_2 = edges_btw_ctr_nois(tilde_ctr, tilde_lam, pn)
 
         exclude_nodes_2 = [tilde_lam[exclude_2[0]]] + [tilde_lam[exclude_2[1]]]
-        test_name = tilde_lam[exclude_2[0]].axis_names
         tilde_theta_2_ls = []
         for n in tilde_lam:
             if n not in exclude_nodes_2:
@@ -164,27 +164,31 @@ for k in range(moves):
         tt2_reorder = list(map(lambda name: tilde_theta_2[name], L_axis_names))
         tilde_theta_2.reorder_edges(tt2_reorder)
 
-        # con_ls = [tilde_theta_2] + exclude_nodes_2
-        # test_f[k,pn-1] = contract_by_nodes(con_ls, None, 'f').tensor
-print(test_f)
-    if i+2 >= 1:
-        exclude_1 = [0] # always the left most node.
+        '''
+        Since the code isn't finished, without contract all nodes, remaining some
+        undangling edges would cause problem in loop.
+        '''
+        con_ls = [tilde_theta_2] + exclude_nodes_2
+        test_f[k,pn-1] = contract_by_nodes(con_ls, None, 'f').tensor.real
+# print(np.matrix.round(test_f,2).real)
+    if i+2 >= 1 and m+2-(i+2) >= 3:
+        # exclude_1 = [0] # always the left most node.
         beta_1 = F_exp[m-(i+2)-1] - F[k, m-(i+2)-1]
         # Take the lamdas for tilde_Theta_(pn)
-        noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(i+2, m+2)))
+        noise_u = list(map(lambda x: order4_to_2(lamdas[x].tensor), np.arange(i+1, m+2)))
     
-        tilde_lam = initialized_lamdas_tn(m-(i+2), noise_u, rho_e)
+        tilde_lam = initialized_lamdas_tn(m-(i+1), noise_u, rho_e)
         # Take the gates for tilde_Theta(m-(i+2))
-        tilde_ctr = control_ten[(i+2)+1:-((i+2)+2)]
-        M_axis = ['z\''+str(m-(i+2)+1), 's'+str(m-(i+2)+1)]
+        tilde_ctr = control_ten[(i+2):-((i+2)+1)]
+        M_axis = ['z\''+str(m-(i+1)+1), 's'+str(m-(i+1)+1)]
         M = tn.Node(proj_O, name='M', axis_names=M_axis)
         
-        Gfin_axis = control_ten[i+2].axis_names
+        Gfin_axis = control_ten[i+1].axis_names
         # Did not take the axis_names of Gfin_dg of control_ten,
         # since tilde_ctr is shorter than it, and the axis_names should be continuous.
-        Gfin_dg_axis = control_ten[-((i+2)+2)].axis_names
+        Gfin_dg_axis = control_ten[-((i+1)+2)].axis_names
         tmp_ctr = np.identity(2, dtype=complex)
-        for ctr_l in range(i+2):
+        for ctr_l in range(int((len(tilde_ctr)-1)/2)):
             tmp_ctr = np.conj(tilde_ctr[ctr_l].tensor.T) @ tmp_ctr
         tmp_ctr_dg = tn.Node(np.conj(tmp_ctr.T), name='Gfin_dg', axis_names=Gfin_dg_axis)
         tmp_ctr = tn.Node(tmp_ctr, name='Gfin', axis_names=Gfin_axis)
@@ -194,12 +198,13 @@ print(test_f)
         tilde_ctr.append(M)
         
         # define the edges for tilde_Theta(pn)
-        lam_ex_1 = edges_in_lamdas(tilde_lam, m-(i+2))
-        ctr_ex_1 = edges_btw_ctr_nois(tilde_ctr, tilde_lam, m-(i+2))
+        lam_ex_1 = edges_in_lamdas(tilde_lam, m-(i+1))
+        ctr_ex_1 = edges_btw_ctr_nois(tilde_ctr, tilde_lam, m-(i+1))
         tilde_theta_1 = contract_by_nodes(tilde_lam[1:]+tilde_ctr, None, 'tilde_theta_1')
-        
-        test_f_1[k] = contract_by_nodes([tilde_theta_1]+[tilde_lam[0]], None, 'test_f_1').tensor
-print(test_f_1)
+
+        test_f_1[k] = contract_by_nodes([tilde_theta_1]+[tilde_lam[0]], None, 'test_f_1').tensor.real
+print(np.matrix.round(test_f_1,2).real)
+
         # tilde_theta_2 += beta * tmp_theta_2.tensor
         # ============ tilde_theta_2 is done, now a tilde_theta_1 =========================
         # tilde_theta_1 = contract_edge_list(lam_ex_1)
