@@ -161,6 +161,48 @@ def rY(theta):
     matrix = linalg.expm(-1j * theta * np.pi/2 * Y)
     return matrix
     
+def noise_nonM_unitary(M):
+    X = np.array([[0, 1],[1, 0]], dtype=complex)
+    Y = np.array([[0, -1j],[1j, 0]], dtype=complex)
+    Z = np.array([[1, 0],[0, -1]], dtype=complex)
+    I = np.eye(2, dtype=complex)
+
+    ds = 2   # dim(rho_s)
+    de = 2
+    J = 1.7
+    hx = 1.47
+    hy = -1.05
+    delta = 0.03
+
+    H = J * np.kron(X,X) + hx * (np.kron(X, I) + np.kron(I, X)) + hy * (np.kron(Y, I) + np.kron(I, Y))
+
+    # Non-Markovian noise, assume unitary.
+    # noise_u = linalg.expm(-1j*delta*H)
+    noise_u = []
+    # Generate the initial noise of lamda_ms + lamda_m+1, lamda_0
+    for i in range(M+2):
+        noise_u.append(linalg.expm(-1j*delta*H))
+        # noise_u.append(np.identity(4, dtype=complex))
+    return noise_u
+
+def non_Markovian_unitary_map(rho, noise_u):
+    return noise_u @ rho @ np.conj(noise_u).T
+
+def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
+    # apply unitary noise in the sequence
+    # Each step has different noise.
+    I = np.eye(2, dtype=complex)
+    tmp_rho = rho
+    inver_op = np.eye(2)
+    # lam_0 is not consider in the previous situation, adding it awkwardly here when all lams are the same.
+    tmp_rho = noise_u[0] @ tmp_rho @ np.conj(noise_u[0].T)
+    for i in range(m):
+        gate = rand_clifford[i]
+        tmp_rho = noise_u[i] @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u[i]).T
+        
+        inver_op = inver_op @ np.conj(gate).T
+    return tmp_rho, inver_op
+
 if __name__ == '__main__':
     test_L = L.copy()
     test_tilde = tmp_theta_2.copy()
