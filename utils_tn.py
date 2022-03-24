@@ -12,15 +12,20 @@ import numpy as np
 from scipy import linalg
 import tensornetwork as tn
 
+def compare_statistcs(l1, l2):
+    lam1 = l1.tensor
+    lam2 = l2.tensor
+    print('max', np.max(lam1), np.max(lam2))
+    print('min', np.min(lam1), np.min(lam2))
+    print('mean', np.mean(lam1), np.mean(lam2))
+
 def order2_to_4(lamda, sys_dim=2, bond_dim=2):
     lamda = lamda.reshape(sys_dim, bond_dim, sys_dim, bond_dim)
     lamda= np.swapaxes(lamda, -2, -1)
-    # lamda= np.swapaxes(lamda, 0, 1)
     return lamda
 
 def order4_to_2(lamda, sys_dim=2, bond_dim=2):
     lamda= np.swapaxes(lamda, -2, -1)
-    # lamda= np.swapaxes(lamda, 0, 1)
     lamda = lamda.reshape(sys_dim*bond_dim, sys_dim*bond_dim)
     return lamda
 
@@ -161,18 +166,18 @@ def rY(theta):
     matrix = linalg.expm(-1j * theta * np.pi/2 * Y)
     return matrix
     
-def noise_nonM_unitary(M):
+def noise_nonM_unitary(M, J=1.7, hx=1.47, hy=-1.05, delta=0.03):
     X = np.array([[0, 1],[1, 0]], dtype=complex)
     Y = np.array([[0, -1j],[1j, 0]], dtype=complex)
-    Z = np.array([[1, 0],[0, -1]], dtype=complex)
+    # Z = np.array([[1, 0],[0, -1]], dtype=complex)
     I = np.eye(2, dtype=complex)
 
-    ds = 2   # dim(rho_s)
-    de = 2
-    J = 1.7
-    hx = 1.47
-    hy = -1.05
-    delta = 0.03
+    # ds = 2   # dim(rho_s)
+    # de = 2      # General version de >= 2 is in the appendix of 2107.05403.
+    # J = 1.7
+    # hx = 1.47
+    # hy = -1.05
+    # delta = 0.03
 
     H = J * np.kron(X,X) + hx * (np.kron(X, I) + np.kron(I, X)) + hy * (np.kron(Y, I) + np.kron(I, Y))
 
