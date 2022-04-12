@@ -14,9 +14,9 @@ from random import randint
 import matplotlib.pyplot as plt
 import time
 
-from utils_tn import initialized_lamdas_tn, gen_control_ten
+from utils_tn import initialized_lamdas_tn, gen_control_ten, single_cliffords
 from utils_tn import edges_btw_ctr_nois, edges_in_lamdas, contract_edge_list
-from utils_tn import rX, rY, contract_by_nodes
+from utils_tn import single_cliffords, contract_by_nodes
 
 def non_Markovian_unitary_map(rho, noise_u):
     return noise_u @ rho @ np.conj(noise_u).T
@@ -36,30 +36,7 @@ def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
         inver_op = inver_op @ np.conj(gate).T
     return tmp_rho, inver_op
 
-clifford_list = [np.identity(2, dtype=complex),
-                rX(1/2) @ rY(1/2),
-                rY(-1/2) @ rX(-1/2),
-                rX(1),
-                rX(-1/2) @ rY(-1/2),
-                rY(-1/2) @ rX(1/2),
-                rY(1),
-                rX(1/2) @ rY(-1/2),
-                rY(1/2) @ rX(1/2),
-                rY(1) @ rX(1),
-                rX(-1/2) @ rY(1/2),
-                rY(1/2) @ rX(-1/2),
-                rX(1) @ rY(1/2),
-                rX(-1/2),
-                rX(-1/2) @ rY(-1/2) @ rX(1/2),
-                rY(-1/2),
-                rX(1/2),
-                rX(1/2) @ rY(1/2) @ rX(1/2),
-                rX(1) @ rY(-1/2),
-                rY(1) @ rX(1/2),
-                rX(1/2) @ rY(-1/2) @ rX(1/2),
-                rY(1/2),
-                rY(1) @ rX(-1/2),
-                rX(-1/2) @ rY(1/2) @ rX(1/2)]
+clifford_list = single_cliffords()
 
 M = 2
 
@@ -148,7 +125,7 @@ for m in range(1, M+1):
 # for i in range(M):
 #     theory_Fm[i] = nonM_theory_Fm.theory_Fm(i, noise_u[i])
 
-# plt.plot(range(1, M+1), Fm_exp, 'o', label='data')
+plt.plot(range(1, M+1), Fm_exp, 'o', label='data')
 
 print('tr', Fm_exp)
 # print('Theory', theory_Fm)

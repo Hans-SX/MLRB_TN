@@ -12,6 +12,33 @@ import numpy as np
 from scipy import linalg
 import tensornetwork as tn
 
+def single_cliffords():
+    clifford_list = [ np.identity(2, dtype=complex),
+                    rX(1/2) @ rY(1/2),
+                    rY(-1/2) @ rX(-1/2),
+                    rX(1),
+                    rX(-1/2) @ rY(-1/2),
+                    rY(-1/2) @ rX(1/2),
+                    rY(1),
+                    rX(1/2) @ rY(-1/2),
+                    rY(1/2) @ rX(1/2),
+                    rY(1) @ rX(1),
+                    rX(-1/2) @ rY(1/2),
+                    rY(1/2) @ rX(-1/2),
+                    rX(1) @ rY(1/2),
+                    rX(-1/2),
+                    rX(-1/2) @ rY(-1/2) @ rX(1/2),
+                    rY(-1/2),
+                    rX(1/2),
+                    rX(1/2) @ rY(1/2) @ rX(1/2),
+                    rX(1) @ rY(-1/2),
+                    rY(1) @ rX(1/2),
+                    rX(1/2) @ rY(-1/2) @ rX(1/2),
+                    rY(1/2),
+                    rY(1) @ rX(-1/2),
+                    rX(-1/2) @ rY(1/2) @ rX(1/2)]
+    return clifford_list
+
 def compare_statistcs(l1, l2):
     lam1 = l1.tensor
     lam2 = l2.tensor
@@ -122,12 +149,10 @@ def contract_edge_list(edg_list, name=None):
         edg_list.pop(i)
     return tensor
 
-# def contract_by_nodes(cont_ls):
-#     tensor = tn.contractors.auto(cont_ls, ignore_edge_order=True)
-    
-
-def contract_by_nodes(cont_ls, out_order, node_name):
-    tensor = tn.contractors.auto(cont_ls, output_edge_order=None, ignore_edge_order=True)
+def contract_by_nodes(cont_ls, out_order=None, name=None, ignore=True):
+    tensor = tn.contractors.auto(cont_ls, output_edge_order=out_order, ignore_edge_order=ignore)
+    if name != None:
+        tensor.set_name(name)
     return tensor
 
 def pop_no_contract_edg(exclude, ctr_edg, lam_edg):
