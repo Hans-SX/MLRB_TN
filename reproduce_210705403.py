@@ -5,11 +5,12 @@ Created on Thu Jul 29 14:14:26 2021
 
 @author: sxyang
 """
-
+#%%
 import numpy as np
 from numpy.linalg import inv
 from scipy.stats import unitary_group
 from scipy import linalg
+import random
 import matplotlib.pyplot as plt
 import time
 # from repro_nonM_210705403 import non_Markovian_theory_Fm
@@ -183,7 +184,7 @@ def trace_Markovianised(noise_u):
 
 
 if __name__ == "__main__":
-    
+
     #====================================================
     # Seting unitary non-Markovian noise, states and measurement.
     # Set parameters for unitary
@@ -194,10 +195,14 @@ if __name__ == "__main__":
     
     ds = 2   # dim(rho_s)
     de = 2
-    J = 1.7
-    hx = 1.47
-    hy = -1.05
-    delta = 0.03
+    # J = 1.7
+    # hx = 1.47
+    # hy = -1.05
+    # delta = 0.03
+    J = 1.2
+    hx = 1.17
+    hy = -1.15
+    delta = 0.05
 
     H = J * np.kron(X,X) + hx * (np.kron(X, I) + np.kron(I, X)) + hy * (np.kron(Y, I) + np.kron(I, Y))
     
@@ -219,7 +224,7 @@ if __name__ == "__main__":
     #====================================================
     #====================================================
     # # This part generate data and caculate ASF. To debug, don't need to run this part.
-    sample_size = int(30)
+    sample_size = int(50)
     fm = np.zeros(sample_size)
     Fm = np.zeros(M)
     # print('Setup state, projector, and some parameters.')
@@ -264,7 +269,7 @@ if __name__ == "__main__":
     
     m = np.array(range(1, 1 + M))
     plt.plot(range(1, M+1), Fm, 'o', label='data')
-    plt.plot(range(1, M+1), A*p**m + B, '-', label=r'$F_m^{(M)}$')
+    # plt.plot(range(1, M+1), A*p**m + B, '-', label=r'$F_m^{(M)}$')
     plt.plot(range(1, M+1), theory_Fm, '-', label=r'$F_m$')
     # plt.plot(range(1, M+1), Am, '-', label=r'$A_m$')
     # plt.plot(range(1, M+1), Bm, '-', label=r'$B_m$')
@@ -273,3 +278,4 @@ if __name__ == "__main__":
     # plt.xlabel('Sequence length')
     # plt.ylabel('Average sequence fidelity')
         
+# %%
