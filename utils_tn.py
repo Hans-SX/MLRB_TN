@@ -11,6 +11,8 @@ Control tensor follow Eq.B20 ~ B22 in RB_with_ML_0113_22 .
 import numpy as np
 from scipy import linalg
 import tensornetwork as tn
+import matplotlib.pyplot as plt
+
 
 def single_cliffords():
     clifford_list = [ np.identity(2, dtype=complex),
@@ -70,7 +72,13 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
             lamdas.insert(0, lam)
             lamdas.append(lam_dg)
     else:
-        for i in range(m+2):
+        noise_0 = np.identity(sys_dim * bond_dim, dtype=complex)
+        noise_0 = order2_to_4(noise_0)
+        lam = tn.Node(noise_0, name='lam'+str(0), axis_names=['e'+str(0+1), 's'+str(0), 's\''+str(0),'e'+str(0)])
+        lam_dg = tn.Node(np.conj(noise_0.T), name='lam_dg'+str(0), axis_names=['r'+str(0), 'z'+str(0), 'z\''+str(0), 'r'+str(0+1)])
+        lamdas.insert(0, lam)
+        lamdas.append(lam_dg)
+        for i in range(1, m+2):
             # e(m+2) = r(m+2), the out most edge.
             tmp = order2_to_4(noise_u)
         
@@ -210,7 +218,7 @@ def noise_nonM_unitary(M, J=1.7, hx=1.47, hy=-1.05, delta=0.03):
     # noise_u = linalg.expm(-1j*delta*H)
     noise_u = []
     # Generate the initial noise of lamda_ms + lamda_m+1, lamda_0
-    for i in range(M+2):
+    for i in range(M+1):
         noise_u.append(linalg.expm(-1j*delta*H))
         # noise_u.append(np.identity(4, dtype=complex))
     return noise_u
@@ -220,123 +228,131 @@ def non_Markovian_unitary_map(rho, noise_u):
 
 def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
     # apply unitary noise in the sequence
-    # Each step has different noise.
+    # Each step has different noise as indicate by the list.
     I = np.eye(2, dtype=complex)
     tmp_rho = rho
     inver_op = np.eye(2)
     # lam_0 is not consider in the previous situation, adding it awkwardly here when all lams are the same.
-    tmp_rho = noise_u[0] @ tmp_rho @ np.conj(noise_u[0].T)
-    for i in range(m):
-        gate = rand_clifford[i]
-        tmp_rho = noise_u[i] @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u[i]).T
-        
-        inver_op = inver_op @ np.conj(gate).T
+    if type(noise_u) == type([]):
+        for i in range(m):
+            gate = rand_clifford[i]
+            tmp_rho = noise_u[i] @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u[i]).T
+            
+            inver_op = inver_op @ np.conj(gate).T
+    else:
+        for i in range(m):
+            gate = rand_clifford[i]
+            tmp_rho = noise_u @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u).T
+            
+            inver_op = inver_op @ np.conj(gate).T
     return tmp_rho, inver_op
 
-if __name__ == '__main__':
-    test_L = L.copy()
-    test_tilde = tmp_theta_2.copy()
-    test_edg = []
-    for i in range(6):
-        test_edg.append(test_L[i] ^ test_tilde[i])
-    test_f = contract_edge_list(test_edg)
-    test_f
-'''
-class control_tensor():
-    def __init__(self, m, sys_dim):
-        self.m = m
-        self.dim = sys_dim
-        
-    # def _2_kronecker_del(self):
-    #     del_2 = np.zeros([self.dim]*4)
-    #     for b in range(2):
-    #         for c in range(2):
-    #             for d in range(2):
-    #                 for e in range(2):
-    #                     if b==c and d==e:
-    #                         del_2[b,c,d,e] = 1
-    #     return del_2
-    
-    def _uni_del(self, lst,  n):
-        # uni_del: delta_x1x2 delta_y1y2
-        # There are 2 ways here to deal with subtraction or addition,
-        # 1) fix the order for 2 tensors for subtract
-        # 2) contract with noise tensor then substract.
-        # I choose 1) setting up order for subtraction or addition.
-        
-        # I want the indices to go along whenever a tensor is generated, easier to track.
-        uni_del_ind = [ind1+str(n), ind2+str(n), ind3+str(n), ind4+str(n)] # should be a list to fit in tn.Node().
-        
-        uni_del_array = np.identity(self.dim, dtype=complex)
-        uni_del_array = np.tensordot(uni_del_array, uni_del_array, axes=0) # numpy.array, to do the calculation.
-        return uni_del_array, uni_del_ind
-        
-    
-    def _Delta(self):
-        delta = np.identity(self.dim*2, dtype=complex).reshape([self.dim]*4) / (self.dim**self.m)
+def ASF_learning_plot(F_exp, F, m, b, e):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
+    colorls = ['g','r','c','m','y','k']
 
-        del_2 = np.identity(self.dim*2, dtype=complex).reshape([self.dim]*4) / (self.dim**self.m)
-        for i in range(1, self.m):
-            # uni_del: delta_x1x2 delta_y1y2
-            uni_del = 'del_s'+ str(i) + 'z' + str(i) + 'del_s'+ str(i) + '\''  + 'z' + str(i-1) + '\'' 
-            # uni_axis: x1 x2 y1 y2
-            uni_axis = ['s'+ str(i), 'z' + str(i), 's'+ str(i) + '\'', 'z' + str(i) + '\'']
-            
-            delta = tn.Node(delta, name=uni_del, axis_names=uni_axis)
-            delta = np.tensordot(delta, del_2, axes=0) / (self.dim**self.m)
-            delta = tn.Node(delta, name='del_')
-        # ds^m or (ds^m)^m?
-        delta*self.dim**self.m
-        delta = tn.Node(delta, name='del_')
-        return delta
-        
-    #--------- here ------------------
-    def _subtract(self, d, n):
-        # lst1, lst2 -> del1, del2; d -> coefficient; n -> 1~m
-        # In the control tensor formula, we only have following 2 orders (with different number).
-        lst1 = ['s', 's\'', 'z\'', 'z']
-        lst2 = ['s', 'z\'', 's\'', 'z']
-        _uni_del, _uni_del_ind = self._uni_del_array(lst1, n)
-        # take the advantage of only exchange middle 2 indices.
-        _uni_del_shuff, _uni_del_ind = self._uni_del_array(lst2, n)
-        _uni_del_shuff = np.swapaxes(_uni_del_shuff, 1, 2)
-        _subtract = d * _uni_del - _uni_del_shuff
-        
-        return _subtract
-        
-    def _Alpha(self):
-        
-        alpha_array = self._subtract()
-        alpha_ind = 
-        for i in range(1:m):
-            _subtract = self._substract()
-            aplpha_array = np.tensordot(alpha_array, _subtract, axes=0)
-            
-            alpha_ind = 
-            
-        
-        return alpha_ind, alpha_array
     
-    def return_array(self, Meas, rho_s):
-        alpha_ind, alpha_array = self._Alpha()
-        Delta_ind, Delta_array = self._Delta()
-        
-        # alpha and a subtraction term
-        subtract_ind, subtract_array = self._subtract()
-        alpha_contr_uni_del = np.tensordot(alpha_array, uni_del_for_alpha, axes=0)
-        alpha_contr_uni_del = np.moveaxis()
-        
-        uni_del_for_Delta = self._uni_del()
-        Delta_contr_uni_del = np.tensordot(Delta_array, uni_del_for_Delta, axes=0)
-        Delta_contr_uni_del = np.moveaxis()
-        
-        main_theta = alpha_contr_uni_del + Delta_contr_uni_del
-        Theta = np.tensordot(main_theta, Meas, axes=0)
-        Theta = np.tensordot(Theta, rho_e, axes=0)
-        Theta = np.moveaxis()
-        
-        # Creating tn.Node()
-        
-        return Theta
-'''
-    
+    # for p in range(moves-6, moves):
+    for p in range(e-b, e):
+        colorp = p % 6
+        ax1.scatter(range(1,m+1), F[p], s=10, c=colorls[colorp], marker="o", label='u'+str(p))
+    plt.legend(loc='lower left')
+    plt.show()
+
+"""
+The following should be added to tensornetwork/network_operations.
+Edit from tn.split_node().
+"""
+# def split_node_u_s_vh(
+#     node: AbstractNode,
+#     left_edges: List[Edge],
+#     right_edges: List[Edge],
+#     max_singular_values: Optional[int] = None,
+#     max_truncation_err: Optional[float] = None,
+#     relative: Optional[bool] = False,
+#     left_name: Optional[Text] = None,
+#     right_name: Optional[Text] = None,
+#     edge_name: Optional[Text] = None,
+# ) -> Tuple[AbstractNode, AbstractNode, Tensor]:
+#   """
+#   Edit from tensornetwork/network_operations.py.
+#   To get separate u, s, vh.
+#   """
+
+#   if not hasattr(node, 'backend'):
+#     raise AttributeError('Node {} of type {} has no `backend`'.format(
+#         node, type(node)))
+
+#   if node.axis_names and edge_name:
+#     left_axis_names = []
+#     right_axis_names = [edge_name]
+#     for edge in left_edges:
+#       left_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
+#                              else node.axis_names[edge.axis2])
+#     for edge in right_edges:
+#       right_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
+#                               else node.axis_names[edge.axis2])
+#     left_axis_names.append(edge_name)
+#   else:
+#     left_axis_names = None
+#     right_axis_names = None
+
+#   backend = node.backend
+#   transp_tensor = node.tensor_from_edge_order(left_edges + right_edges)
+
+#   u, s, vh, trun_vals = backend.svd(transp_tensor,
+#                                     len(left_edges),
+#                                     None, # max_singular_values
+#                                     max_truncation_err,
+#                                     relative=relative)
+  
+#   allsig = np.append(s, trun_vals)
+#   sqrt_s = backend.sqrt(s)
+#   u_s = backend.broadcast_right_multiplication(u, sqrt_s)
+#   vh_s = backend.broadcast_left_multiplication(sqrt_s, vh)
+#   # u_s = u_s[:,:,:,2:2+max_singular_values]
+#   # vh_s = vh_s[2:2+max_singular_values,:,:,:]
+#   u_s = u_s[:,:,:,:max_singular_values]
+#   vh_s = vh_s[:max_singular_values,:,:,:]
+
+#   if max_singular_values == None:
+#     sig = np.zeros([len(s)]*2)
+#   else:
+#     sig = np.zeros([max_singular_values]*2)
+#   # assume 1 system qubit, 2:2+max_..., max_singular_values related to num of env qubit.
+#   np.fill_diagonal(sig, s[:max_singular_values])
+#   mid_node = Node(sig,
+#                   name='s value',
+#                   backend=backend)
+
+#   left_node = Node(u_s,
+#                    name=left_name,
+#                    axis_names=left_axis_names,
+#                    backend=backend)
+
+#   left_axes_order = [
+#       edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
+#   ]
+#   for i, edge in enumerate(left_edges):
+#     left_node.add_edge(edge, i)
+#     edge.update_axis(left_axes_order[i], node, i, left_node)
+
+#   right_node = Node(vh_s,
+#                     name=right_name,
+#                     axis_names=right_axis_names,
+#                     backend=backend)
+
+#   right_axes_order = [
+#       edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
+#   ]
+#   for i, edge in enumerate(right_edges):
+#     # i + 1 to account for the new edge.
+#     right_node.add_edge(edge, i + 1)
+#     edge.update_axis(right_axes_order[i], node, i + 1, right_node)
+
+#   # connect(left_node.edges[-1], right_node.edges[0], name=edge_name)
+#   connect(left_node.edges[-1], right_node.edges[0], name=edge_name)
+#   node.fresh_edges(node.axis_names)
+#   return left_node, right_node, mid_node, allsig
