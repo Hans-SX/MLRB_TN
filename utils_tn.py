@@ -247,10 +247,11 @@ def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
             inver_op = inver_op @ np.conj(gate).T
     return tmp_rho, inver_op
 
-def ASF_learning_plot(F_exp, F, m, b, e):
+def ASF_learning_plot(F_exp, norm_std, F, m, b, e):
     fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
+    # ax1 = fig.add_subplot(111)
+    # ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
+    ax1.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', marker="s", label='F_exp')
     colorls = ['g','r','c','m','y','k']
 
     
