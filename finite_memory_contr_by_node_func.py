@@ -9,21 +9,18 @@ Created on Thu Feb 24 08:47:54 2022
 import numpy as np
 import random
 from datetime import datetime
-from signal import pause
-from tracemalloc import stop
 from random import randint
 from scipy import linalg
-from scipy.stats import unitary_group
+# from scipy.stats import unitary_group
 import tensornetwork as tn
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from utils_tn import initialized_lamdas_tn, gen_control_ten, order2_to_4
 from utils_tn import edges_btw_ctr_nois, edges_in_lamdas
 from utils_tn import order4_to_2, single_cliffords
 from utils_tn import contract_by_nodes, noise_nonM_unitary
 from utils_tn import non_Markovian_unitary_map, rand_clifford_sequence_unitary_noise_list
-from utils_tn import ASF_learning_plot
-from nonM_analytical_expression import non_Markovian_theory_Fm
+# from utils_tn import ASF_learning_plot
 
 def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, qr=False, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam"):
 
@@ -287,7 +284,7 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
         u_prime, vh_prime, sig, allsig = tn.split_node_u_s_vh(L, left_edges=[L[0],L[1],L[2]], 
                         right_edges=[L[3],L[4],L[5]], max_singular_values=2)
         # u_prime, vh_prime, tranc = tn.split_node(L, left_edges=[L[0],L[1],L[2]], 
-                        # right_edges=[L[3],L[4],L[5]], max_singular_values=None)
+        #                 right_edges=[L[3],L[4],L[5]], max_singular_values=None)
             
         all_sigs.append(allsig)
 
@@ -310,8 +307,8 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
         elif qr == False:
             # Project u_prime/vh_prime to unitary.
             # Proj(UXVh) = UProj(X)Vh, X = USigVh.
-            lu, su, ru = np.linalg(order4_to_2(u_prime.tensor))
-            lvh, svh, rvh = np.linalg(order4_to_2(vh_prime.tensor))
+            lu, su, ru = linalg.svd(order4_to_2(u_prime.tensor))
+            lvh, svh, rvh = linalg.svd(order4_to_2(vh_prime.tensor))
             uvh = lu @ ru @ lvh @ rvh
             noise_ten.append(uvh)
             lamdas = initialized_lamdas_tn(m, uvh, rho_e)
@@ -388,13 +385,13 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
 if __name__ == '__main__':
     # start_time = datetime.now()
 
-    fname = 'm60_updates20_sample100_seed5_gamma1_lr0.0103_delta1.55.npz'
+    # fname = 'm60_updates20_sample100_seed5_gamma1_lr0.0103_delta1.55.npz'
     # fname = 'm60_lr1e-05_adama0.9_adamb0.999_updates80_sample100_seed5_gamma1_delta2.npz'
-    data = np.load(fname)
-    min_ind = np.where(data['costs']==min(data['costs']))[0][0]
-    init_noise = data['noise_ten'][min_ind-1]
-    m = 60; updates = 20; nM = True; qr = True; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 100
-    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr, init_noise=init_noise)
+    # data = np.load(fname)
+    # min_ind = np.where(data['costs']==min(data['costs']))[0][0]
+    # init_noise = data['noise_ten'][min_ind-1]
+    m = 5; updates = 10; nM = True; qr = False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 10
+    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM)
 
     # m = 60; updates = 80; nM = True; qr = True; rand_seed = 5; lr = tn.Node(0.01); delta = 2; sample_size = 100; adam1=0.5; adam2=0.5
     # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr, adam1, adam2)

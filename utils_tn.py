@@ -264,6 +264,8 @@ def ASF_learning_plot(F_exp, F, m, b, e):
 """
 The following should be added to tensornetwork/network_operations.
 Edit from tn.split_node().
+
+tensornetwork/__init__.py import split_node_u_s_vh
 """
 # def split_node_u_s_vh(
 #     node: AbstractNode,
