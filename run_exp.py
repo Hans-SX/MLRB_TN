@@ -23,7 +23,7 @@ parser.add_argument('--lfile', type=bool, default=False)
 parser.add_argument('-fname', type=str, default='m60_updates20_sample100_seed5_gamma1_lr0.0103_delta1.55.npz')
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
-parser.add_argument('--ups', type=int, default=40)
+parser.add_argument('--ups', type=int, default=50)
 parser.add_argument('--samps', type=int, default=100)
 
 # Read arguments from command line.

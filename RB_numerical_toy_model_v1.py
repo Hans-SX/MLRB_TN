@@ -39,9 +39,9 @@ class noise_model():
     
     def _depolarizing_noise_v2(self, rho):
         # noise channel should be the same as sum over Kraus.
-        lm = 1 - self.para  # range from 0~1.5, depolarizing channel.
+        # lm = 1 - self.para  # range from 0~1.5, depolarizing channel.
         noisy_rho = 1j*np.zeros((2,2))
-        lmbda = lm
+        lmbda = self.para
         K = 1j*np.zeros((4,2,2)) + 1j*np.zeros((4,2,2))
         K[0] = np.sqrt(1-3*lmbda/4)*np.eye(2)
         K[1] = np.sqrt(lmbda/4)*(np.kron(ket_0, ket_1.T) + np.kron(ket_1, ket_0.T))
@@ -62,7 +62,7 @@ class noise_model():
         K[1] = np.sqrt(self.para)*(np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T))
         # print(K[0])
         # print(K[1])
-        for i in range(1,2):
+        for i in range(2):
             noisy_rho += K[i] @ rho @ np.conj(K[i]).T
         return noisy_rho
     
@@ -74,7 +74,7 @@ class noise_model():
         K[1] = np.array([[0, np.sqrt(self.para)],[0,0]])
         # print(K[0])
         # print(K[1])
-        for i in range(1,2):
+        for i in range(2):
             noisy_rho += K[i] @ rho @ np.conj(K[i]).T
         return noisy_rho
 
@@ -97,8 +97,10 @@ def sequence_with_noise(m, rho, noise_mode, noise_para, seed):
 
 if __name__ == "__main__":
     
-    noise_mode = 'depolar'
-    noise_para = 0.7
+    # noise_mode = 'depolar'
+    noise_mode = 'amp_damp'
+    # noise_mode = 'p_flip'
+    noise_para = 0.1
     
     seed = 1
     # np.random.seed(seed)
@@ -111,8 +113,8 @@ if __name__ == "__main__":
     # rho = np.array([[1,1],[1,1]])/2 + 1j*np.zeros((2,2))
     proj_O = np.kron(ket_0, ket_0.T)        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
 
-    M = 15
-    sample_size = int(2)
+    M = 60
+    sample_size = int(100)
     fm = np.zeros((M, sample_size))
     # u = []
     # Fm = np.zeros(M)

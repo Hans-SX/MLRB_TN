@@ -251,14 +251,14 @@ def ASF_learning_plot(F_exp, norm_std, F, m, b, e):
     fig = plt.figure()
     # ax1 = fig.add_subplot(111)
     # ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
-    ax1.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', marker="s", label='F_exp')
+    plt.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', marker="s", label='F_exp')
     colorls = ['g','r','c','m','y','k']
 
     
     # for p in range(moves-6, moves):
     for p in range(e-b, e):
         colorp = p % 6
-        ax1.scatter(range(1,m+1), F[p], s=10, c=colorls[colorp], marker="o", label='u'+str(p))
+        plt.scatter(range(1,m+1), F[p], s=10, c=colorls[colorp], marker="o", label='u'+str(p))
     plt.legend(loc='lower left')
     plt.show()
 
