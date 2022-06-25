@@ -22,7 +22,7 @@ from utils_tn import contract_by_nodes, noise_nonM_unitary
 from utils_tn import unitary_map, rand_clifford_sequence_unitary_noise_list
 from utils_tn import load_plot
 
-def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, qr=False, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam"):
+def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, update_all=True, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam", noise_model="nM"):
 
     """
     m = 20  # m=3, F[27]; m=6, F[35] closest to F_exp
@@ -107,8 +107,13 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
         F_exp = np.mean(F_e, axis=1)
         # print(F_exp)
     else:
-        # Marko = np.load("Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
-        Marko = np.load("Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
+        if noise_model == "AD":
+            Marko = np.load("Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
+        elif noise_model == "PF":
+            Marko = np.load("Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
+        else:
+            print("Noise model " + noise_model + " not support.")
+            exit()
         F_exp = Marko['F_exp']
         F_exp = F_exp[:m]
         # Somehow std_exp in Markovian case (depolar) are ~1e-16, did not figure out why. Set to 0 for the convenience.
@@ -295,23 +300,24 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
             
         all_sigs.append(allsig)
 
-        if qr == True:
-            u = order4_to_2(u_prime.tensor)
-            vh = order4_to_2(vh_prime.tensor)
-            uq, _ = linalg.qr(u)
-            _, vq = linalg.rq(vh)
-            # uvh = uq @ np.conj(vq).T
-            uvh = uq @ vq
-            uvh = order2_to_4(uvh)
-            uq = order2_to_4(uq)
-            vq = order2_to_4(vq)
-            u_prime = tn.Node(uvh)
-            vh_prime = tn.Node(uvh)
+        # QR part
+        #     u = order4_to_2(u_prime.tensor)
+        #     vh = order4_to_2(vh_prime.tensor)
+        #     uq, _ = linalg.qr(u)
+        #     _, vq = linalg.rq(vh)
+        #     # uvh = uq @ np.conj(vq).T
+        #     uvh = uq @ vq
+        #     uvh = order2_to_4(uvh)
+        #     uq = order2_to_4(uq)
+        #     vq = order2_to_4(vq)
+        #     u_prime = tn.Node(uvh)
+        #     vh_prime = tn.Node(uvh)
 
-            lam_up = order4_to_2(u_prime.tensor)
-            noise_ten.append(lam_up)
-            lamdas = initialized_lamdas_tn(m, lam_up, rho_e)
-        elif qr == False:
+        #     lam_up = order4_to_2(u_prime.tensor)
+        #     noise_ten.append(lam_up)
+        #     lamdas = initialized_lamdas_tn(m, lam_up, rho_e)
+
+        if update_all == True:
             # Project u_prime/vh_prime to unitary.
             # Proj(UXVh) = UProj(X)Vh, X = USigVh.
             lu, su, ru = linalg.svd(order4_to_2(u_prime.tensor))
@@ -320,8 +326,13 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
             noise_ten.append(uvh)
             lamdas = initialized_lamdas_tn(m, uvh, rho_e)
         else:
-            u_prime = tn.Node(u_prime, name=lamdas[i].name, axis_names=lamdas[i].axis_names)
-            vh_prime = tn.Node(vh_prime, name=lamdas[i+1].name, axis_names=lamdas[i+1].axis_names)
+            lu, su, ru = linalg.svd(order4_to_2(u_prime.tensor))
+            lvh, svh, rvh = linalg.svd(order4_to_2(vh_prime.tensor))
+            noise_ten.append(lu @ ru)
+            u_new = order2_to_4(lu @ ru)
+            vh_new = order2_to_4(lvh @ rvh)
+            u_prime = tn.Node(u_new, name=lamdas[i].name, axis_names=lamdas[i].axis_names)
+            vh_prime = tn.Node(vh_new, name=lamdas[i+1].name, axis_names=lamdas[i+1].axis_names)
             uh_prime = np.conj(u_prime.tensor.T)
             v_prime = np.conj(vh_prime.tensor.T)
             uh_prime = tn.Node(uh_prime, name=lamdas[2*(m+2)-i].name, axis_names=lamdas[2*(m+2)-i].axis_names)
@@ -355,21 +366,22 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
 
 
     if nM == True:
-        if optimizer == "Adam":
-            fname = "m"+ str(m) + "_lr" + str(lr.tensor.real) + "_adama" + str(adam1) + "_adamb" + str(adam2) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed) + "_delta" + str(delta)
-        elif optimizer == "AdaGrad":
-            fname = "m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed) + "_delta" + str(delta) + "_Ada"
-        else:
-            fname = "m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed) + "_delta" + str(delta)
-
+        fname = "m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
     else:
-        fname = "Markovian_m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed) + "_delta" + str(delta)
-        fname = fname + "_pflip"
-        if optimizer == "Adam":
-            fname = fname + "_Adam"
-        elif optimizer == "AdaGrad":
-            fname = fname + "_Ada"
+        fname = "Markovian_m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
     
+    if optimizer == "Adam":
+        fname = fname + "_adama" + str(adam1) + "_adamb" + str(adam2) + "_Adam"
+    elif optimizer == "AdaGrad":
+        fname = fname + "_Ada"
+
+    if update_all == True:
+        fname += "_replace_all"
+    else:
+        fname += "_replace_1"
+
+    fname = fname + "_" + noise_model
+
     if lfile:
         fname = fname + "_load_cb"
 
@@ -383,40 +395,13 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
     print('Duration: {}'.format(duration))
     return F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname
 
-    #%%
-    # s = 6
-    # e = updates
-    # ASF_learning_plot(F_exp, F, m, s, e)
-
-    # import matplotlib.pyplot as plt
-    # fig2, ax2 = plt.subplots(1,2)
-    # ax2[0].plot(costs)
-    # ax2[1].plot(agf)
-
 #%%
 if __name__ == '__main__':
-    # start_time = datetime.now()
 
-    # fname = 'm60_updates20_sample100_seed5_gamma1_lr0.0103_delta1.55.npz'
-    # fname = 'm60_lr1e-05_adama0.9_adamb0.999_updates80_sample100_seed5_gamma1_delta2.npz'
-    # data = np.load(fname)
-    # min_ind = np.where(data['costs']==min(data['costs']))[0][0]
-    # init_noise = data['noise_ten'][min_ind-1]
-    m = 10; updates = 40; nM = True; qr = False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 100
+    m = 10; updates = 40; nM = True; update_all= False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 100
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM)
 
-    data, F_exp, norm_std, F, costs = load_plot(fname, m)
-
-    # m = 60; updates = 80; nM = True; qr = True; rand_seed = 5; lr = tn.Node(0.01); delta = 2; sample_size = 100; adam1=0.5; adam2=0.5
-    # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr, adam1, adam2)
-
-
-    # m = 6; updates = 70; nM = True; qr = True; rand_seed = 5; lr = tn.Node(1); delta = 10; sample_size = 100
-
-    # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr)
-
-    # end_time = datetime.now()
-    # print('Duration: {}'.format(end_time - start_time))
+    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model)
 
 
 # %%

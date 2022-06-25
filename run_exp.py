@@ -4,6 +4,7 @@ Created on Mon Jun 13 14:17:54 2022
 @author: sxyang
 """
 
+from turtle import update
 import numpy as np
 import tensornetwork as tn
 import argparse
@@ -25,6 +26,8 @@ parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
 parser.add_argument('--samps', type=int, default=100)
+parser.add_argument('--update_all', type=bool, default=True)
+parser.add_argument('--noise', type=str, default="nM")
 
 # Read arguments from command line.
 args = parser.parse_args()
@@ -39,6 +42,8 @@ nM = args.nM
 rand_seed = args.seed
 updates = args.ups
 sample_size = args.samps
+update_all = args.update_all
+noise_model = args.noise
 
 if args.lfile:
     data = np.load(lfname)
@@ -47,7 +52,7 @@ if args.lfile:
 else:
     init_noise = None
 
-qr = False; delta = 2
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr, adam1, adam2, init_noise, optimizer)
+delta = 2
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
 print(fname)
