@@ -223,7 +223,7 @@ def noise_nonM_unitary(M, J=1.7, hx=1.47, hy=-1.05, delta=0.03):
         # noise_u.append(np.identity(4, dtype=complex))
     return noise_u
 
-def non_Markovian_unitary_map(rho, noise_u):
+def unitary_map(rho, noise_u):
     return noise_u @ rho @ np.conj(noise_u).T
 
 def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
@@ -251,17 +251,64 @@ def ASF_learning_plot(F_exp, norm_std, F, m, b, e):
     fig = plt.figure()
     # ax1 = fig.add_subplot(111)
     # ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
-    plt.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', marker="s", label='F_exp')
+    plt.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', label='F_exp')
     colorls = ['g','r','c','m','y','k']
 
     
     # for p in range(moves-6, moves):
     for p in range(e-b, e):
         colorp = p % 6
-        plt.scatter(range(1,m+1), F[p], s=10, c=colorls[colorp], marker="o", label='u'+str(p))
+        plt.scatter(range(1,m+1), F[p].real, s=10, c=colorls[colorp], marker="o", label='u'+str(p))
+    plt.xlabel("Sequence length")
+    plt.("Sequence fidelity")
     plt.legend(loc='lower left')
     plt.show()
 
+def load_plot(fname, m, samples=100):
+    fname = fname +'.npz'
+    data = np.load(fname)
+    F_exp = data['F_exp']
+    std_exp = data['std_exp']
+    F = data['F']
+    costs = data['costs']
+    # noise_ten = data['noise_ten']
+    # all_sigs = data['all_sigs']
+    # Duration = data['Duration']
+    
+    min_cost_ind = np.where(costs == min(costs))
+    min_cost_ind = min_cost_ind[0][0]
+    print("min cost & ind", costs[min_cost_ind], min_cost_ind)
+    print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
+    norm_std = std_exp / np.sqrt(samples)
+    print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
+    ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
+    plt.plot(costs.real)
+    
+    return data, F_exp, norm_std, F, costs
+
+def ASF_from_gate_by_gate(m, sample_size, noise_u):
+    """
+    Not finished yet.
+    """
+    proj_O = np.zeros((2,2), dtype=complex)
+    proj_O[0] = 1
+    rho = np.zeros((4,4), dtype=complex)
+    I = np.identity(2, dtype=complex)
+    F_e = np.zeros((m, sample_size), dtype=complex)
+
+    # F_exp, non-M unitary noise from Pedro's work.
+    for sam in range(sample_size):
+        for n in range(1, m+1):
+            tmp_rho, inver_op = rand_clifford_sequence_unitary_noise_list(n, rho, noise_u, sam_clif[sam, :n])
+            tmp_rho = np.kron(I, inver_op) @ tmp_rho @ np.conj(np.kron(I, inver_op)).T
+            if type(noise_u) == type([]):
+                final_state = unitary_map(tmp_rho, noise_u[n-1])
+            else:
+                final_state = unitary_map(tmp_rho, noise_u)
+            f_sys_state = np.trace(final_state.reshape(2,2,2,2), axis1=0, axis2=2)
+            F_e[n-1, sam] = np.trace(proj_O @ f_sys_state).real
+    std_exp = np.std(F_e, axis=1)
+    F_exp = np.mean(F_e, axis=1)
 """
 The following should be added to tensornetwork/network_operations.
 Edit from tn.split_node().
