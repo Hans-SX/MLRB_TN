@@ -15,12 +15,12 @@ parser = argparse.ArgumentParser()
 
 # Adding optionale argument.
 parser.add_argument('--m', type=int, default=60)
-parser.add_argument('--lr')
+parser.add_argument('--step')
 parser.add_argument('--adam1', default=0.9)
 parser.add_argument('--adam2', default=0.99)
-parser.add_argument('--opt', type=str, default='Adam')
+parser.add_argument('--opt', type=str, default='AdaGrad')
 parser.add_argument('--lfile', type=bool, default=False)
-parser.add_argument('-fname', type=str, default='m60_updates20_sample100_seed5_gamma1_lr0.0103_delta1.55.npz')
+parser.add_argument('-fname', type=str, default='m60_lr0.001001_updates50_sample100_seed5_delta2_Ada.npz')
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
@@ -30,7 +30,7 @@ parser.add_argument('--samps', type=int, default=100)
 args = parser.parse_args()
 
 m = args.m
-lr = tn.Node(complex(args.lr))
+lr = tn.Node(complex(args.step))
 adam1 = args.adam1
 adam2 = args.adam2
 optimizer = args.opt
