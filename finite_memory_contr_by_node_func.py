@@ -19,8 +19,8 @@ from utils_tn import initialized_lamdas_tn, gen_control_ten, order2_to_4
 from utils_tn import edges_btw_ctr_nois, edges_in_lamdas
 from utils_tn import order4_to_2, single_cliffords
 from utils_tn import contract_by_nodes, noise_nonM_unitary
-from utils_tn import non_Markovian_unitary_map, rand_clifford_sequence_unitary_noise_list
-# from utils_tn import ASF_learning_plot
+from utils_tn import unitary_map, rand_clifford_sequence_unitary_noise_list
+from utils_tn import load_plot
 
 def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, qr=False, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam"):
 
@@ -98,26 +98,33 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
                 tmp_rho, inver_op = rand_clifford_sequence_unitary_noise_list(n, rho, noise_u, sam_clif[sam, :n])
                 tmp_rho = np.kron(I, inver_op) @ tmp_rho @ np.conj(np.kron(I, inver_op)).T
                 if type(noise_u) == type([]):
-                    final_state = non_Markovian_unitary_map(tmp_rho, noise_u[n-1])
+                    final_state = unitary_map(tmp_rho, noise_u[n-1])
                 else:
-                    final_state = non_Markovian_unitary_map(tmp_rho, noise_u)
+                    final_state = unitary_map(tmp_rho, noise_u)
                 f_sys_state = np.trace(final_state.reshape(2,2,2,2), axis1=0, axis2=2)
                 F_e[n-1, sam] = np.trace(proj_O @ f_sys_state).real
         std_exp = np.std(F_e, axis=1)
         F_exp = np.mean(F_e, axis=1)
         # print(F_exp)
     else:
-        F_Ma = np.load("Markovian_ASF_exp.npy")
-        F_exp = F_Ma[:m]
-        # Somehow std_exp in Markovian case are ~1e-16, did not figure out why. Set to 0 for the convenience.
-        std_exp = np.zeros((1,m))
+        # Marko = np.load("Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
+        Marko = np.load("Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
+        F_exp = Marko['F_exp']
+        F_exp = F_exp[:m]
+        # Somehow std_exp in Markovian case (depolar) are ~1e-16, did not figure out why. Set to 0 for the convenience.
+        std_exp = Marko['std_exp']
+        std_exp = std_exp[:m]
         """
-        std_exp...
         directly load data might not be a good idea.
+        the sampling control tensor are different.
+        but ideally, the control tensor is the average of all samples might be fine.
         """
 
     # ----------------------------------------------------------
-    F = np.zeros((updates, m))
+    """
+    Make F allow complex, but it should be zero on img.
+    """
+    F = np.zeros((updates, m), dtype=complex)
     agf = np.zeros(updates)
 
     grad2s = []
@@ -334,7 +341,7 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
                 print('beta', beta)
                 break
         else:
-            if beta <= nM: 
+            if beta <= 0.1: 
                 # for the Markovian case, obtain 0.26 from a result.
                 F = F[:k+2]
                 print('k', k)
@@ -357,6 +364,11 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
 
     else:
         fname = "Markovian_m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed) + "_delta" + str(delta)
+        fname = fname + "_pflip"
+        if optimizer == "Adam":
+            fname = fname + "_Adam"
+        elif optimizer == "AdaGrad":
+            fname = fname + "_Ada"
     
     if lfile:
         fname = fname + "_load_cb"
@@ -390,8 +402,10 @@ if __name__ == '__main__':
     # data = np.load(fname)
     # min_ind = np.where(data['costs']==min(data['costs']))[0][0]
     # init_noise = data['noise_ten'][min_ind-1]
-    m = 5; updates = 10; nM = True; qr = False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 10
+    m = 10; updates = 40; nM = True; qr = False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 100
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM)
+
+    data, F_exp, norm_std, F, costs = load_plot(fname, m)
 
     # m = 60; updates = 80; nM = True; qr = True; rand_seed = 5; lr = tn.Node(0.01); delta = 2; sample_size = 100; adam1=0.5; adam2=0.5
     # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, qr, adam1, adam2)
@@ -404,26 +418,5 @@ if __name__ == '__main__':
     # end_time = datetime.now()
     # print('Duration: {}'.format(end_time - start_time))
 
-    # fname = '.npz'
-    # m = 60
-    # import numpy as np
-    # import matplotlib.pyplot as plt
-    # from utils_tn import ASF_learning_plot
-    # data = np.load(fname)
-    # F_exp = data['F_exp']
-    # std_exp = data['std_exp']
-    # F = data['F']
-    # costs = data['costs']
-    # noise_ten = data['noise_ten']
-    # all_sigs = data['all_sigs']
-    # Duration = data['Duration']
-    
-    # samples = 100
-    # min_cost_ind = np.where(costs == min(costs))
-    # min_cost_ind = min_cost_ind[0][0]
-    # print("min cost & ind", costs[min_cost_ind], min_cost_ind)
-    # print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
-    # norm_std = std_exp / np.sqrt(samples)
-    # print("norm_std", np.sum(norm_std))
-    # ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
-    # plt.plot(costs)
+
+# %%
