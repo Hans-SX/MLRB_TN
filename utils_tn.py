@@ -254,17 +254,27 @@ def ASF_learning_plot(F_exp, norm_std, F, m, b, e):
     plt.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', label='F_exp')
     colorls = ['g','r','c','m','y','k']
 
-    
     # for p in range(moves-6, moves):
     for p in range(e-b, e):
         colorp = p % 6
         plt.scatter(range(1,m+1), F[p].real, s=10, c=colorls[colorp], marker="o", label='u'+str(p))
     plt.xlabel("Sequence length")
-    plt.("Sequence fidelity")
+    plt.ylabel("Sequence fidelity")
     plt.legend(loc='lower left')
     plt.show()
 
-def load_plot(fname, m, samples=100):
+def plot_for_read(F_exp, norm_std, F, m, noise, up_ind):
+    fig = plt.figure()
+    # ax1 = fig.add_subplot(111)
+    # ax1.scatter(range(1,m+1), F_exp, s=10, c='b', marker="s", label='F_exp')
+    plt.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', label='$\\mathcal{F}^{%s}$' % (noise))
+    plt.scatter(range(1,m+1), F[up_ind].real, s=10, marker="o", c='r', label='$\\mathcal{F}_{%d}^{%s}$' % (up_ind, noise))
+    plt.xlabel("Sequence length")
+    plt.ylabel("Sequence fidelity")
+    plt.legend(loc='upper right')
+    plt.show()
+
+def load_plot(fname, m, noise_model, samples=100):
     fname = fname +'.npz'
     data = np.load(fname)
     F_exp = data['F_exp']
@@ -281,8 +291,11 @@ def load_plot(fname, m, samples=100):
     print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
     norm_std = std_exp / np.sqrt(samples)
     print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
-    ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
+    plot_for_read(F_exp, norm_std, F, m, noise_model, min_cost_ind)
+    # ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
     plt.plot(costs.real)
+    plt.xlabel("Number of updates")
+    plt.ylabel("Cost")
     
     return data, F_exp, norm_std, F, costs
 
