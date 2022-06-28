@@ -98,9 +98,9 @@ def sequence_with_noise(m, rho, noise_mode, noise_para, seed):
 if __name__ == "__main__":
     
     # noise_mode = 'depolar'
-    noise_mode = 'amp_damp'
-    # noise_mode = 'p_flip'
-    noise_para = 0.1
+    # noise_mode = 'amp_damp'
+    noise_mode = 'p_flip'
+    noise_para = 0.06
     
     seed = 1
     # np.random.seed(seed)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # rho = np.array([[1,1],[1,1]])/2 + 1j*np.zeros((2,2))
     proj_O = np.kron(ket_0, ket_0.T)        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
 
-    M = 60
+    M = 80
     sample_size = int(100)
     fm = np.zeros((M, sample_size))
     # u = []
@@ -141,14 +141,16 @@ if __name__ == "__main__":
         # Fm[m-1] = np.average(fm)
 
     std_exp = np.std(fm, axis=1)
+    norm_std = std_exp / np.sqrt(sample_size)
     Fm = np.mean(fm, axis=1)
+    plt.errorbar(range(1, M+1), Fm, yerr=norm_std)
         
         # if m % 20 == 0:
         #     np.savetxt("../data/Fm_" + str(M) + "_avg_" + str(sample_size) + '_' + noise_mode +'_'+ str(noise_para )+ "_seed_" + str(seed) + "_" + time_mark + ".txt", Fm)
             # np.savetxt("../data/Fm_" + str(M) + "_avg_" + str(sample_size) + "_Amp_damp_001_K1_seed_" + str(seed) + "_" + time_mark + ".txt", Fm)
     
-    pic_path = "../data/Fm_" + str(M) + "_avg_" + str(sample_size) + '_' + noise_mode +'_'+ str(noise_para) + "_seed_" + str(seed) + "_" + time_mark + ".png"
-    compare_Fm(Fm, proj_O, rho, noise_mode, noise_para, pic_path)
+    # pic_path = "../data/Fm_" + str(M) + "_avg_" + str(sample_size) + '_' + noise_mode +'_'+ str(noise_para) + "_seed_" + str(seed) + "_" + time_mark + ".png"
+    # compare_Fm(Fm, proj_O, rho, noise_mode, noise_para, pic_path)
     # plt.plot(range(1, M+1), Fm, 'o')
     # plt.title(noise_mode)
     # plt.xlabel('Sequence length')

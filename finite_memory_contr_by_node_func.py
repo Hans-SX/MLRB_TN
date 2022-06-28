@@ -111,6 +111,8 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
             Marko = np.load("Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
         elif noise_model == "PF":
             Marko = np.load("Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
+        elif noise_model == "DP":
+            Marko = np.load("Markovian_m80_depolar_p0.06_unitary_samp100.npz")
         else:
             print("Noise model " + noise_model + " not support.")
             exit()
@@ -335,13 +337,13 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
             vh_prime = tn.Node(vh_new, name=lamdas[i+1].name, axis_names=lamdas[i+1].axis_names)
             uh_prime = np.conj(u_prime.tensor.T)
             v_prime = np.conj(vh_prime.tensor.T)
-            uh_prime = tn.Node(uh_prime, name=lamdas[2*(m+2)-i].name, axis_names=lamdas[2*(m+2)-i].axis_names)
-            v_prime = tn.Node(v_prime, name=lamdas[2*(m+2)-(i+1)].name, axis_names=lamdas[2*(m+2)-(i+1)].axis_names)
+            uh_prime = tn.Node(uh_prime, name=lamdas[2*(m+2)-1-i].name, axis_names=lamdas[2*(m+2)-1-i].axis_names)
+            v_prime = tn.Node(v_prime, name=lamdas[2*(m+2)-1-(i+1)].name, axis_names=lamdas[2*(m+2)-1-(i+1)].axis_names)
 
             lamdas[i] = u_prime
             lamdas[i+1] = vh_prime
-            lamdas[2*(m+2)-i] = uh_prime
-            lamdas[2*(m+2)-(i+1)] = v_prime
+            lamdas[2*(m+2)-1-i] = uh_prime
+            lamdas[2*(m+2)-1-(i+1)] = v_prime
 
         beta = sum(abs(F[k] - F_exp))
         if nM == True:
@@ -398,8 +400,8 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
 #%%
 if __name__ == '__main__':
 
-    m = 10; updates = 40; nM = True; update_all= False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 100
-    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM)
+    m = 5; updates = 10; nM = True; update_all= False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 10; noise_model="nM"
+    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all)
 
     data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model)
 

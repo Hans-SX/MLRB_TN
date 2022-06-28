@@ -26,7 +26,7 @@ parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
 parser.add_argument('--samps', type=int, default=100)
-parser.add_argument('--update_all', type=bool, default=True)
+parser.add_argument('--update_all', default=True)
 parser.add_argument('--noise', type=str, default="nM")
 
 # Read arguments from command line.
@@ -51,7 +51,8 @@ if args.lfile:
     init_noise = data['noise_ten'][min_ind-1]
 else:
     init_noise = None
-
+# print('updat_all?', update_all)
+# exit()
 delta = 2
 F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
