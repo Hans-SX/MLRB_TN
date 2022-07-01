@@ -271,12 +271,12 @@ def plot_for_read(F_exp, norm_std, F, m, noise, up_ind, fname):
     plt.scatter(range(1,m+1), F[up_ind].real, s=10, marker="o", c='r', label='$\\mathcal{F}_{%d}^{%s}$' % (up_ind, noise))
     plt.xlabel("Sequence length")
     plt.ylabel("Sequence fidelity")
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     plt.grid(True)
-    plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
+    # plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
     plt.show()
 
-def load_plot(fname, m, noise_model, samples=100):
+def load_plot(fname, m, noise_model, save, samples=100):
     data = np.load(fname +'.npz')
     F_exp = data['F_exp']
     std_exp = data['std_exp']
@@ -292,13 +292,31 @@ def load_plot(fname, m, noise_model, samples=100):
     print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
     norm_std = std_exp / np.sqrt(samples)
     print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
-    plot_for_read(F_exp, norm_std, F, m, noise_model, min_cost_ind, fname)
+    plot_inset(F_exp.real, norm_std.real, F.real, m, noise_model, min_cost_ind, costs, fname, save)
+    # plot_for_read(F_exp, norm_std, F, m, noise_model, min_cost_ind, fname)
     # ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
-    plt.plot(costs.real)
-    plt.xlabel("Number of updates")
-    plt.ylabel("Cost")
+    # plt.plot(costs.real)
+    # plt.xlabel("Number of updates")
+    # plt.ylabel("Cost")
     
     return data, F_exp, norm_std, F, costs
+
+def plot_inset(F_exp, norm_std, F, m, noise, up_ind, costs, fname, save):
+    fig, ax1 = plt.subplots()
+    left, bottom, width, height = [0.5, 0.60, 0.4, 0.28]
+    ax2 = fig.add_axes([left, bottom, width, height])
+    ax1.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', label='$\\mathcal{F}^{%s}$' % (noise))
+    ax1.scatter(range(1,m+1), F[up_ind].real, s=10, marker="o", c='r', label='$\\mathcal{F}_{%d}^{%s}$' % (up_ind, noise))
+    ax2.plot(costs)
+    ax2.set_xlabel("Number of updates")
+    ax2.set_ylabel("Cost")
+    ax1.set_xlabel("Sequence length")
+    ax1.set_ylabel("Sequence fidelity")
+    ax1.legend(loc='lower left')
+    ax1.grid()
+    if save == True:
+        plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
+    plt.show()
 
 def ASF_from_gate_by_gate(m, sample_size, noise_u):
     """

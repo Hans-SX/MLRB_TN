@@ -55,7 +55,14 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
         lfile = True
     # init_noise = noise_nonM_unitary(m-1, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
     # init_noise.insert(0, np.identity(4, dtype=complex))
-    noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
+
+    if noise_model == "nM":
+        noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
+    elif noise_model == "randH":
+        # Should fix one, somehow it did not use the same.
+        H = np.random.random((4,4)) + 1j*np.random.random((4,4))
+        H = H @ np.conj(H.T)
+        noise_u = linalg.expm(-1j*0.05*H)
     # noise_u = np.identity(sys_dim * bond_dim, dtype=complex)
     # noise_u = unitary_group.rvs(4)
     # init_noise = noise_u.copy()
@@ -391,7 +398,11 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
     end_time = datetime.now()
     duration = end_time - start_time
     Duration = 'Duration: {}'.format(duration)
-    np.savez(fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration)
+    
+    if type(noise_u) == type([]):
+        np.savez(fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration)
+    else:
+        np.savez(fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u)
 
     
     print('Duration: {}'.format(duration))
@@ -403,7 +414,7 @@ if __name__ == '__main__':
     m = 5; updates = 10; nM = True; update_all= False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 10; noise_model="nM"
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all)
 
-    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model)
+    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, save)
 
 
 # %%
