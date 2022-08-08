@@ -17,11 +17,13 @@ parser = argparse.ArgumentParser()
 # Adding optionale argument.
 parser.add_argument('--m', type=int, default=60)
 parser.add_argument('--step')
-parser.add_argument('--adam1', default=0.9)
-parser.add_argument('--adam2', default=0.99)
+parser.add_argument('--adam1', type=complex, default=0.9)
+parser.add_argument('--adam2', type=complex, default=0.99)
 parser.add_argument('--opt', type=str, default='AdaGrad')
 parser.add_argument('--lfile', type=bool, default=False)
-parser.add_argument('-fname', type=str, default='m60_lr0.001001_updates50_sample100_seed5_delta2_Ada.npz')
+# To continue from a current best for the replace pair case,
+# need some effort. The initial noise should not take the one corresponding to the min_ind.
+parser.add_argument('--fname', type=str, default='m20_lr3.0_updates2000_sample100_seed5_replace_1_nM_load_cb.npz')
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
@@ -48,7 +50,7 @@ noise_model = args.noise
 if args.lfile:
     data = np.load(lfname)
     min_ind = np.where(data['costs']==min(data['costs']))[0][0]
-    init_noise = data['noise_ten'][min_ind-1]
+    init_noise = data['noise_ten'][min_ind]
 else:
     init_noise = None
 # print('updat_all?', update_all)

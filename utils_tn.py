@@ -292,8 +292,8 @@ def load_plot(fname, m, noise_model, save, samples=100):
     print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
     norm_std = std_exp / np.sqrt(samples)
     print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
+    # plot_inset_violin(F_exp.real, norm_std.real, F.real, m, noise_model, min_cost_ind, costs, fname, save)
     plot_inset(F_exp.real, norm_std.real, F.real, m, noise_model, min_cost_ind, costs, fname, save)
-    # plot_for_read(F_exp, norm_std, F, m, noise_model, min_cost_ind, fname)
     # ASF_learning_plot(F_exp, norm_std, F, m, 1, min_cost_ind+1)
     # plt.plot(costs.real)
     # plt.xlabel("Number of updates")
@@ -301,11 +301,39 @@ def load_plot(fname, m, noise_model, save, samples=100):
     
     return data, F_exp, norm_std, F, costs
 
-def plot_inset(F_exp, norm_std, F, m, noise, up_ind, costs, fname, save):
+def plot_inset(F_exp, norm_std, F, m, noise_model, up_ind, costs, fname, save):
     fig, ax1 = plt.subplots()
     left, bottom, width, height = [0.5, 0.60, 0.4, 0.28]
+    # left, bottom, width, height = [0.2, 0.2, 0.35, 0.25]
     ax2 = fig.add_axes([left, bottom, width, height])
-    ax1.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', label='$\\mathcal{F}^{%s}$' % (noise))
+    ax1.errorbar(range(1,m+1), F_exp, yerr=norm_std, c='b', fmt="o", ms=3, label='$\\mathcal{F}^{%s}$' % (noise_model))
+    ax1.scatter(range(1,m+1), F[up_ind].real, s=10, marker="s", c='r', label='$\\mathcal{F}_{%d}^{%s}$' % (up_ind, noise_model))
+    ax2.plot(costs)
+    ax2.patch.set_alpha(0.7)
+    ax2.set_xlabel("Number of updates")
+    ax2.set_ylabel("Cost")
+    ax1.set_xlabel("Sequence length")
+    ax1.set_ylabel("Sequence fidelity")
+    ax1.legend(loc='lower left')
+    # ax1.legend(loc='upper right')
+    ax1.grid()
+    if save == True:
+        plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
+    plt.show()
+
+def plot_inset_violin(F, m, noise, up_ind, costs, fname, save):
+    """
+    Finished, but in the sequence length m=60 is not obvious. Will be just a line.
+    """
+    if noise == "nM":
+        F_e = np.load("nM_m60_samp100_Fe.npy")
+    # elif noise == "PF":
+
+    fig, ax1 = plt.subplots()
+    left, bottom, width, height = [0.5, 0.60, 0.4, 0.28]
+    # left, bottom, width, height = [0.2, 0.2, 0.35, 0.25]
+    ax2 = fig.add_axes([left, bottom, width, height])
+    ax1.violin(F_e)
     ax1.scatter(range(1,m+1), F[up_ind].real, s=10, marker="o", c='r', label='$\\mathcal{F}_{%d}^{%s}$' % (up_ind, noise))
     ax2.plot(costs)
     ax2.set_xlabel("Number of updates")
@@ -313,6 +341,7 @@ def plot_inset(F_exp, norm_std, F, m, noise, up_ind, costs, fname, save):
     ax1.set_xlabel("Sequence length")
     ax1.set_ylabel("Sequence fidelity")
     ax1.legend(loc='lower left')
+    # ax1.legend(loc='upper right')
     ax1.grid()
     if save == True:
         plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")

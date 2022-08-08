@@ -60,9 +60,11 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
         noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
     elif noise_model == "randH":
         # Should fix one, somehow it did not use the same.
-        H = np.random.random((4,4)) + 1j*np.random.random((4,4))
-        H = H @ np.conj(H.T)
-        noise_u = linalg.expm(-1j*0.05*H)
+        # H = np.random.random((4,4)) + 1j*np.random.random((4,4))
+        # H = H @ np.conj(H.T)
+        # noise_u = linalg.expm(-1j*0.05*H)
+        noise_u = np.load("randH_seed5.npy")
+        noise_model = "randH_seed5"
     # noise_u = np.identity(sys_dim * bond_dim, dtype=complex)
     # noise_u = unitary_group.rvs(4)
     # init_noise = noise_u.copy()
@@ -291,7 +293,7 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
             mv_adam = tn.Node(mv_adam)
             L -= lr * mv_adam
             grad2s.append(mv_adam)
-        elif optimizer == "SGD":
+        elif optimizer == "BGD":
             L -= lr * grad2
             grad2s.append(grad2)
 
@@ -392,7 +394,9 @@ def estimate_noise_via_sweep(m, updates, sample_size=100, rand_seed=5, lr=tn.Nod
     fname = fname + "_" + noise_model
 
     if lfile:
-        fname = fname + "_load_cb"
+        # fname = fname + "_load_cb"
+        # for m=20 replace1, lazy to make it general.
+        fname = fname + "_load_cb2_1"
 
     costs = np.asarray(costs)
     end_time = datetime.now()
@@ -414,7 +418,7 @@ if __name__ == '__main__':
     m = 5; updates = 10; nM = True; update_all= False; rand_seed = 5; lr = tn.Node(0.001);  delta = 2; sample_size = 10; noise_model="nM"
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all)
 
-    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, save)
+    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, save, samples)
 
 
 # %%

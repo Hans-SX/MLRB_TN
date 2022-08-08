@@ -102,7 +102,7 @@ if __name__ == "__main__":
     noise_mode = 'p_flip'
     noise_para = 0.06
     
-    seed = 1
+    seed = 5
     # np.random.seed(seed)
     time_mark = time.strftime("%Y_%m_%d_%H_%M", time.localtime())
     
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # rho = np.array([[1,1],[1,1]])/2 + 1j*np.zeros((2,2))
     proj_O = np.kron(ket_0, ket_0.T)        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
 
-    M = 80
+    M = 60
     sample_size = int(100)
     fm = np.zeros((M, sample_size))
     # u = []
