@@ -49,7 +49,7 @@ def compare_statistcs(l1, l2):
     print('mean', np.mean(lam1), np.mean(lam2))
 
 def order2_to_4(lamda, sys_dim=2, bond_dim=2):
-    lamda = lamda.reshape(sys_dim, bond_dim, sys_dim, bond_dim)
+    lamda = lamda.reshape(bond_dim, sys_dim, bond_dim, sys_dim)
     lamda= np.swapaxes(lamda, -2, -1)
     return lamda
 
@@ -65,7 +65,7 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
     if type(noise_u) == type([]):
         for i in range(m+2):
             # e(m+2) = r(m+2), the out most edge.
-            tmp = order2_to_4(noise_u[i])
+            tmp = order2_to_4(noise_u[i], sys_dim, bond_dim)
             lam = tn.Node(tmp, name='lam'+str(i), axis_names=['e'+str(i+1), 's'+str(i), 's\''+str(i),'e'+str(i)])
             lam_dg = tn.Node(np.conj(tmp.T), name='lam_dg'+str(i), axis_names=['r'+str(i), 'z'+str(i), 'z\''+str(i), 'r'+str(i+1)])
             
@@ -73,14 +73,14 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
             lamdas.append(lam_dg)
     else:
         noise_0 = np.identity(sys_dim * bond_dim, dtype=complex)
-        noise_0 = order2_to_4(noise_0)
+        noise_0 = order2_to_4(noise_0, sys_dim, bond_dim)
         lam = tn.Node(noise_0, name='lam'+str(0), axis_names=['e'+str(0+1), 's'+str(0), 's\''+str(0),'e'+str(0)])
         lam_dg = tn.Node(np.conj(noise_0.T), name='lam_dg'+str(0), axis_names=['r'+str(0), 'z'+str(0), 'z\''+str(0), 'r'+str(0+1)])
         lamdas.insert(0, lam)
         lamdas.append(lam_dg)
         for i in range(1, m+2):
             # e(m+2) = r(m+2), the out most edge.
-            tmp = order2_to_4(noise_u)
+            tmp = order2_to_4(noise_u, sys_dim, bond_dim)
         
             lam = tn.Node(tmp, name='lam'+str(i), axis_names=['e'+str(i+1), 's'+str(i), 's\''+str(i),'e'+str(i)])
             lam_dg = tn.Node(np.conj(tmp.T), name='lam_dg'+str(i), axis_names=['r'+str(i), 'z'+str(i), 'z\''+str(i), 'r'+str(i+1)])
@@ -224,25 +224,34 @@ def noise_nonM_unitary(M, J=1.7, hx=1.47, hy=-1.05, delta=0.03):
     return noise_u
 
 def unitary_map(rho, noise_u):
-    return noise_u @ rho @ np.conj(noise_u).T
+    dim = rho.shape[0]
+    noise_dim = noise_u.shape[0]
+    I_noise = np.identity(int(dim/noise_dim), dtype=complex)
+    return np.kron(I_noise, noise_u) @ rho @ np.conj(np.kron(I_noise, noise_u)).T
 
-def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford):
+def rand_clifford_sequence_unitary_noise_list(m, rho, noise_u, rand_clifford, sys_dim=2, bond_dim=2):
     # apply unitary noise in the sequence
     # Each step has different noise as indicate by the list.
-    I = np.eye(2, dtype=complex)
+    dim = sys_dim * bond_dim
     tmp_rho = rho
-    inver_op = np.eye(2)
+    inver_op = np.eye(sys_dim)
     # lam_0 is not consider in the previous situation, adding it awkwardly here when all lams are the same.
     if type(noise_u) == type([]):
         for i in range(m):
+            noise_dim = noise_u[i].shape[0]
+            I_gate = np.identity(bond_dim, dtype=complex)
+            I_noise = np.identity(int(dim/noise_dim), dtype=complex)
             gate = rand_clifford[i]
-            tmp_rho = noise_u[i] @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u[i]).T
+            tmp_rho = np.kron(I_noise, noise_u[i]) @ np.kron(I_gate, gate) @ tmp_rho @ np.conj(np.kron(I_gate, gate)).T @ np.conj(np.kron(I_noise, noise_u[i])).T
             
             inver_op = inver_op @ np.conj(gate).T
     else:
+        noise_dim = noise_u.shape[0]
+        I_gate = np.identity(bond_dim, dtype=complex)
+        I_noise = np.identity(int(dim/noise_dim), dtype=complex)
         for i in range(m):
             gate = rand_clifford[i]
-            tmp_rho = noise_u @ np.kron(I, gate) @ tmp_rho @ np.conj(np.kron(I, gate)).T @ np.conj(noise_u).T
+            tmp_rho = np.kron(I_noise, noise_u) @ np.kron(I_gate, gate) @ tmp_rho @ np.conj(np.kron(I_gate, gate)).T @ np.conj(np.kron(I_noise, noise_u)).T
             
             inver_op = inver_op @ np.conj(gate).T
     return tmp_rho, inver_op

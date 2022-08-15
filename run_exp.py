@@ -9,6 +9,7 @@ import numpy as np
 import tensornetwork as tn
 import argparse
 from finite_memory_contr_by_node_func import estimate_noise_via_sweep
+from flexible_env_qubit_model import estimate_noise_via_sweep_envq
 
 
 # Initialize parser.
@@ -16,7 +17,7 @@ parser = argparse.ArgumentParser()
 
 # Adding optionale argument.
 parser.add_argument('--m', type=int, default=60)
-parser.add_argument('--step')
+parser.add_argument('--lr', type=complex, default=0.01)
 parser.add_argument('--adam1', type=complex, default=0.9)
 parser.add_argument('--adam2', type=complex, default=0.99)
 parser.add_argument('--opt', type=str, default='AdaGrad')
@@ -29,13 +30,14 @@ parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
 parser.add_argument('--samps', type=int, default=100)
 parser.add_argument('--update_all', default=True)
-parser.add_argument('--noise', type=str, default="nM")
+parser.add_argument('--noise_model', type=str, default="nM")
+parser.add_argument('--bond_dim', type=int, default=2)
 
 # Read arguments from command line.
 args = parser.parse_args()
 
 m = args.m
-lr = tn.Node(complex(args.step))
+lr = tn.Node(complex(args.lr))
 adam1 = args.adam1
 adam2 = args.adam2
 optimizer = args.opt
@@ -45,7 +47,10 @@ rand_seed = args.seed
 updates = args.ups
 sample_size = args.samps
 update_all = args.update_all
-noise_model = args.noise
+noise_model = args.noise_model
+bond_dim = args.bond_dim
+
+delta = 2
 
 if args.lfile:
     data = np.load(lfname)
@@ -55,7 +60,9 @@ else:
     init_noise = None
 # print('updat_all?', update_all)
 # exit()
-delta = 2
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
+
+# F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
+
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, bond_dim=bond_dim)
 
 print(fname)
