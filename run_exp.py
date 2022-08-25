@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--m', type=int, default=60)
 parser.add_argument('--lr', type=complex, default=0.01)
 parser.add_argument('--adam1', type=complex, default=0.9)
-parser.add_argument('--adam2', type=complex, default=0.99)
+parser.add_argument('--adam2', type=complex, default=0.999)
 parser.add_argument('--opt', type=str, default='AdaGrad')
 parser.add_argument('--lfile', type=bool, default=False)
 # To continue from a current best for the replace pair case,
@@ -32,6 +32,8 @@ parser.add_argument('--samps', type=int, default=100)
 parser.add_argument('--update_all', default=True)
 parser.add_argument('--noise_model', type=str, default="nM")
 parser.add_argument('--bond_dim', type=int, default=2)
+# coeff for making (F - F_exp) smaller, m>30.
+parser.add_argument('--coeff', type=int, default=1)
 
 # Read arguments from command line.
 args = parser.parse_args()
@@ -49,6 +51,7 @@ sample_size = args.samps
 update_all = args.update_all
 noise_model = args.noise_model
 bond_dim = args.bond_dim
+coeff = args.coeff
 
 delta = 2
 
@@ -63,6 +66,6 @@ else:
 
 # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, bond_dim=bond_dim)
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, bond_dim=bond_dim, coeff=coeff)
 
 print(fname)
