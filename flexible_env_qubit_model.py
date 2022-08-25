@@ -22,7 +22,7 @@ from utils_tn import contract_by_nodes, noise_nonM_unitary
 from utils_tn import unitary_map, rand_clifford_sequence_unitary_noise_list
 from utils_tn import load_plot
 
-def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, update_all=True, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam", noise_model="nM", sys_dim=2, bond_dim=2):
+def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, update_all=True, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam", noise_model="nM", sys_dim=2, bond_dim=2, coeff=1):
 
     """
     m = 20  # m=3, F[27]; m=6, F[35] closest to F_exp
@@ -143,6 +143,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     F = np.zeros((updates, m), dtype=complex)
     agf = np.zeros(updates)
 
+    coeff_on_cost = np.ones(m)
+    coeff_on_cost[30:] = 1/coeff
     grad2s = []
     costs = []
     all_sigs = []
@@ -205,7 +207,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             if pn == 0:
                 break
             exclude_2 = [i-l, i+1-l]
-            beta_pn = tn.Node(F_exp[pn-1] - F[k, pn-1])  # F[k, pn-1] is averaged.
+            beta_pn = tn.Node((F_exp[pn-1] - F[k, pn-1]) * coeff_on_cost[pn-1])  # F[k, pn-1] is averaged.
             tilde_theta_2 = dict()
             tilde_ctr = dict()
             for sam in range(sample_size):
@@ -269,12 +271,14 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
 
             grad2 += beta_pn * avg_tilde_theta_2
 
-        cost = sum((F[k] - F_exp)**2)
+        # Not only cost, the gradient also need to apply coeff_on_cost.
+        cost = sum(((F[k] - F_exp) * coeff_on_cost)**2)
+        # cost = sum((F[k] - F_exp)**2)
         costs.append(cost/2)
         tmpagf = order4_to_2(lamdas[0].tensor, sys_dim, bond_dim)
         # Averaged gate fidelity
         agf[k] = (abs(np.trace(tmpagf))**2 + dim) / (dim**2 + dim)
- 
+
         # Axis_name and edge_name are the same for each sample.
         grad2 = tn.Node(grad2.tensor, name='grad', axis_names=tilde_theta_2[0].axis_names)
         # grad2.add_axis_names(tilde_theta_2[0].axis_names)
@@ -377,6 +381,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     else:
         fname += "_replace_1"
 
+    if coeff != 1:
+        fname = fname + "_wcost_" + coeff
     fname = fname + "_" + noise_model
 
     if lfile:
@@ -403,7 +409,7 @@ if __name__ == '__main__':
 
     from flexible_env_qubit_model import estimate_noise_via_sweep_envq
     import tensornetwork as tn
-    m = 2
+    m = 10
     lr = tn.Node(complex(0.01))
     adam1 = 0.9
     adam2 = 0.99
