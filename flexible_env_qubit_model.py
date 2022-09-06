@@ -62,7 +62,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # H = np.random.random((4,4)) + 1j*np.random.random((4,4))
         # H = H @ np.conj(H.T)
         # noise_u = linalg.expm(-1j*0.05*H)
-        noise_u = np.load("randH_seed5.npy")
+        noise_u = np.load("data/randH_seed5.npy")
         noise_model = "randH_seed5"
     # noise_u = np.identity(sys_dim * bond_dim, dtype=complex)
     # noise_u = unitary_group.rvs(4)
@@ -87,13 +87,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             control_n.append(gen_control_ten(rho_s, j+1, proj_O, sam_clif[sam, :j+1]))
         sam_n[sam] = control_n
         control_n = []
-    """
-    Still some bug to fix.
 
-    all_control_ten = np.load("Clifford_m60_samp100_seed5.npz", allow_pickle=True)
-    control_ten = all_control_ten["control_ten"]
-    sam_n = all_control_ten["sam_n"]
-    """
     # -------------------- Generate the F_exp here -------------
     #%%
     # nM = True
@@ -117,11 +111,11 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # print(F_exp)
     else:
         if noise_model == "AD":
-            Marko = np.load("Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
+            Marko = np.load("data/Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")
         elif noise_model == "PF":
-            Marko = np.load("Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
+            Marko = np.load("data/Markovian_m80_p_flip_p0.06_unitary_samp100.npz")
         elif noise_model == "DP":
-            Marko = np.load("Markovian_m80_depolar_p0.06_unitary_samp100.npz")
+            Marko = np.load("data/Markovian_m80_depolar_p0.06_unitary_samp100.npz")
         else:
             print("Noise model " + noise_model + " not support.")
             exit()
@@ -396,9 +390,9 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     Duration = 'Duration: {}'.format(duration)
     
     if type(noise_u) == type([]):
-        np.savez(fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration)
+        np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration)
     else:
-        np.savez(fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u)
+        np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grad2s=grad2s, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u)
 
     
     print('Duration: {}'.format(duration))

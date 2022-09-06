@@ -14,11 +14,13 @@ import time
 from fit_RB import compare_Fm
 
 class noise_model():
-    def __init__(self, noise_mode, noise_para):
+    def __init__(self, noise_mode, noise_para, seed=5, delta=0.01):
         self.mode = noise_mode
         self.para = noise_para
+        self.seed = seed
+        self.delta = delta
         
-    def apply_noise(self, state):
+    def apply_noise(self, state, randH):
         if self.mode == 'depolar':
             # model = self._depolarizing_noise(state)
             model = self._depolarizing_noise_v2(state)
@@ -26,10 +28,18 @@ class noise_model():
             model = self._phase_flip(state)
         elif self.mode == 'amp_damp':
             model = self._amplitude_damping(state)
+        elif self.mode == 'randH':
+            model = self._randH_noise(state, randH, self.delta)
         # elif noise_mode == 'b_flip':
             # tmp_rho = b_flip()
         return model
         
+    def _randH_noise(self, rho, randH, delta):
+        noise = linalg.expm(1j*delta*randH)
+        noisy_rho = noise @ rho @ np.conj(noise.T)
+        # self.randH = randH
+        return noisy_rho
+
     def _depolarizing_noise(self, rho):
         # Something wrong with this function.
         # noise channel should be the same as sum over Kraus.
@@ -42,6 +52,8 @@ class noise_model():
         # lm = 1 - self.para  # range from 0~1.5, depolarizing channel.
         noisy_rho = 1j*np.zeros((2,2))
         lmbda = self.para
+        ket_0 = np.array([1,0]).reshape(2,1)
+        ket_1 = np.array([0,1]).reshape(2,1)
         K = 1j*np.zeros((4,2,2)) + 1j*np.zeros((4,2,2))
         K[0] = np.sqrt(1-3*lmbda/4)*np.eye(2)
         K[1] = np.sqrt(lmbda/4)*(np.kron(ket_0, ket_1.T) + np.kron(ket_1, ket_0.T))
@@ -78,29 +90,41 @@ class noise_model():
             noisy_rho += K[i] @ rho @ np.conj(K[i]).T
         return noisy_rho
 
-def sequence_with_noise(m, rho, noise_mode, noise_para, seed):
+def sequence_with_noise(m, rho, noise_mode, noise_para, seed, randH, delta):
     np.random.seed(seed)
     tmp_rho = rho
     inver_op = np.eye(2)
     u = np.zeros((m, 2, 2), dtype=complex)
+    noise_type = noise_model(noise_mode, noise_para, seed, delta)
     for i in range(m):
         u_map = unitary_group.rvs(2)
         u[i-1] = u_map
         tmp_rho = u_map @ tmp_rho @ np.conj(u_map).T
         
-        noise_type = noise_model(noise_mode, noise_para)
-        tmp_rho = noise_type.apply_noise(tmp_rho)
+        if noise_mode == 'randH':
+            tmp_rho = noise_type.apply_noise(tmp_rho, randH)
+        else:
+            tmp_rho = noise_type.apply_noise(tmp_rho)
         
         inver_op = inver_op @ inv(u_map)
     return tmp_rho, inver_op, noise_type, u
 
+def gen_randH(seed):
+    np.random.seed(seed)
+    randH = np.random.random((2,2)) +1j*np.random.random((2,2))
+    randH = (randH + np.conj(randH.T))/2
+    return randH
 
+#%%
 if __name__ == "__main__":
     
     # noise_mode = 'depolar'
     # noise_mode = 'amp_damp'
-    noise_mode = 'p_flip'
+    # noise_mode = 'p_flip'
+    noise_mode = 'randH'
+    randH = gen_randH(5)
     noise_para = 0.06
+    delta = 0.1
     
     seed = 5
     # np.random.seed(seed)
@@ -113,8 +137,8 @@ if __name__ == "__main__":
     # rho = np.array([[1,1],[1,1]])/2 + 1j*np.zeros((2,2))
     proj_O = np.kron(ket_0, ket_0.T)        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
 
-    M = 60
-    sample_size = int(100)
+    M = 100
+    sample_size = int(50)
     fm = np.zeros((M, sample_size))
     # u = []
     # Fm = np.zeros(M)
@@ -130,10 +154,18 @@ if __name__ == "__main__":
         usamp = []
         test_var_samp = []
         for m in range(1, M+1):
-            tmp_rho, inver_op, noise_type, tmp_u = sequence_with_noise(m, rho, noise_mode, noise_para, seed+i)
+
+            """
+            Here----------, seed is also for sampling and for fix randH. This is don't work.
+            """
+            tmp_rho, inver_op, noise_type, tmp_u = sequence_with_noise(m, rho, noise_mode, noise_para, seed+i, randH, delta)
             usamp.append(tmp_u)
             tmp_rho = inver_op @ tmp_rho @ np.conj(inver_op).T
-            final_state = noise_type.apply_noise(tmp_rho)
+
+            if noise_mode == "randH":
+                final_state = noise_type.apply_noise(tmp_rho, randH)
+            else:
+                final_state = noise_type.apply_noise(tmp_rho)
             test_var_samp.append(final_state)
             fm[m-1, i] = np.trace(proj_O @ final_state).real
         u.append(usamp)

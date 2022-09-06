@@ -286,7 +286,7 @@ def plot_for_read(F_exp, norm_std, F, m, noise, up_ind, fname):
     plt.show()
 
 def load_plot(fname, m, noise_model, save, samples=100):
-    data = np.load(fname +'.npz')
+    data = np.load('data/' + fname +'.npz')
     F_exp = data['F_exp']
     std_exp = data['std_exp']
     F = data['F']
@@ -356,29 +356,6 @@ def plot_inset_violin(F, m, noise, up_ind, costs, fname, save):
         plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
     plt.show()
 
-def ASF_from_gate_by_gate(m, sample_size, noise_u):
-    """
-    Not finished yet.
-    """
-    proj_O = np.zeros((2,2), dtype=complex)
-    proj_O[0] = 1
-    rho = np.zeros((4,4), dtype=complex)
-    I = np.identity(2, dtype=complex)
-    F_e = np.zeros((m, sample_size), dtype=complex)
-
-    # F_exp, non-M unitary noise from Pedro's work.
-    for sam in range(sample_size):
-        for n in range(1, m+1):
-            tmp_rho, inver_op = rand_clifford_sequence_unitary_noise_list(n, rho, noise_u, sam_clif[sam, :n])
-            tmp_rho = np.kron(I, inver_op) @ tmp_rho @ np.conj(np.kron(I, inver_op)).T
-            if type(noise_u) == type([]):
-                final_state = unitary_map(tmp_rho, noise_u[n-1])
-            else:
-                final_state = unitary_map(tmp_rho, noise_u)
-            f_sys_state = np.trace(final_state.reshape(2,2,2,2), axis1=0, axis2=2)
-            F_e[n-1, sam] = np.trace(proj_O @ f_sys_state).real
-    std_exp = np.std(F_e, axis=1)
-    F_exp = np.mean(F_e, axis=1)
 """
 The following should be added to tensornetwork/network_operations.
 Edit from tn.split_node().
