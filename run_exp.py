@@ -9,8 +9,8 @@ import numpy as np
 import tensornetwork as tn
 import argparse
 from finite_memory_contr_by_node_func import estimate_noise_via_sweep
-from flexible_env_qubit_model import estimate_noise_via_sweep_envq
-
+# from flexible_env_qubit_model import estimate_noise_via_sweep_envq
+from flexible_MPS_env_qubit_model import estimate_noise_via_sweep_envq
 
 # Initialize parser.
 parser = argparse.ArgumentParser()
@@ -28,12 +28,13 @@ parser.add_argument('--fname', type=str, default='m20_lr3.0_updates2000_sample10
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
-parser.add_argument('--samps', type=int, default=100)
+parser.add_argument('--samps', type=int, default=50)
 parser.add_argument('--update_all', default=True)
 parser.add_argument('--noise_model', type=str, default="nM")
 parser.add_argument('--bond_dim', type=int, default=2)
 # coeff for making (F - F_exp) smaller, m>30.
 parser.add_argument('--coeff', type=int, default=1)
+parser.add_argument('--test', default=False)
 
 # Read arguments from command line.
 args = parser.parse_args()
@@ -52,8 +53,10 @@ update_all = args.update_all
 noise_model = args.noise_model
 bond_dim = args.bond_dim
 coeff = args.coeff
+test = args.test
 
-delta = 2
+sys_dim = 2
+delta = 5
 
 if args.lfile:
     data = np.load(lfname)
@@ -66,6 +69,6 @@ else:
 
 # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, bond_dim=bond_dim, coeff=coeff)
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 print(fname)

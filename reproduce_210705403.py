@@ -220,11 +220,11 @@ if __name__ == "__main__":
     rho = np.kron(np.kron(ket_0, np.conj(ket_0.T)), np.kron(ket_0, np.conj(ket_0.T)))
     proj_O = np.kron(ket_0, np.conj(ket_0.T))        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
     
-    M = 20
+    M = 60
     #====================================================
     #====================================================
     # # This part generate data and caculate ASF. To debug, don't need to run this part.
-    sample_size = int(50)
+    sample_size = int(1000)
     fm = np.zeros(sample_size)
     Fm = np.zeros(M)
     # print('Setup state, projector, and some parameters.')
@@ -239,7 +239,8 @@ if __name__ == "__main__":
             fm[i] = np.trace(proj_O @ f_sys_state).real
             
         Fm[m-1] = np.average(fm)
-        print("m = ", str(m), " finished.")
+        if m % 50 == 0:
+            print("m = ", str(m), " finished.")
     #====================================================
     
     #====================================================

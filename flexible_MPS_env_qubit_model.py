@@ -3,6 +3,9 @@
 """
 Created on Tue Sep 6 09:58:54 2022
 
+The MPS part not done yet.
+Still figuring a reasonable way to do it properly.
+
 @author: sxyang
 """
 #%%
@@ -27,15 +30,6 @@ from RB_numerical_toy_model_v1 import clifford_sequence_with_noise, gen_randH
 
 def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, update_all=True, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam", noise_model="nM", sys_dim=2, bond_dim=2, coeff=1, test=False):
 
-    """
-    m = 20  # m=3, F[27]; m=6, F[35] closest to F_exp
-    # m = 20, F[26], 26min, (delta ~ 7)
-    updates = 50
-    lr = tn.Node(1)  # tn.Node(0.0001)
-    delta = 8 # >=1, stopping condition
-
-    sample_size = 50
-    """
     start_time = datetime.now()
 
     random.seed(rand_seed)
@@ -385,7 +379,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     if nM == True:
         fname = "m"+ str(m) + "_dimE" + str(bond_dim) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
     else:
-        fname = "Markovian_m"+ str(m) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
+        fname = "Markovian_m"+ str(m) + "_dimE" + str(bond_dim) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
     
     if optimizer == "Adam":
         fname = fname + "_adama" + str(adam1) + "_adamb" + str(adam2) + "_Adam"
@@ -426,17 +420,17 @@ if __name__ == '__main__':
 
     # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
     import tensornetwork as tn
-    m = 30
+    m = 10
     lr = tn.Node(complex(0.01))
     adam1 = 0.9
     adam2 = 0.99
     optimizer = "Adam"
-    nM = False
+    nM = True
     rand_seed = 5
     updates = 50
-    sample_size = 50
+    sample_size = 10
     update_all = True
-    noise_model = "randH"
+    noise_model = "nM"
     init_noise = None
     delta = 2
     sys_dim = 2
@@ -447,6 +441,7 @@ if __name__ == '__main__':
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 
-    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, False, 50)
+
+    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, False, sample_size)
 
 # %%

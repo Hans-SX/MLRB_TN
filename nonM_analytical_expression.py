@@ -4,17 +4,17 @@
 Created on Wed Jan 12 17:34:36 2022
 
 Edit the noise to be different for each step.
-1/25
+Jan 25
 class non_Markovian_theory_Fm is working now.
 sequence_with_unitary_noise_list() only take care the exp data, class non_Markovian_theory_Fm is for the nonM theoritical value.
-1/14
+Jan 14
 The differences of class non_Markovian_theory_Fm from reproduce_210705403.py is the
 sequence_with_unitary_noise_list() make the noise_u: list.
 
 @author: sxyang
 """
 
-
+#%%
 import numpy as np
 from numpy.linalg import inv
 from scipy.stats import unitary_group
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     hy = -1.05
     delta = 0.03
     
-    M = 10
+    M = 60
     n = 15
     # Non-Markovian noise, assume unitary.
     noise_u = []
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     # m = np.array(range(1, 1 + M))
     # plt.plot(range(1, M+1), Fm, 'o', label='data')
     # plt.plot(range(1, M+1), A*p**m + B, '-', label=r'$F_m^{(M)}$')
-    # plt.plot(range(1, M+1), theory_Fm, '-', label=r'$F_m$')
+    plt.plot(range(1, M+1), theory_Fm, '-', label=r'$F_m$')
     # plt.plot(range(1, M+1), Am, '-', label=r'$A_m$')
     # plt.plot(range(1, M+1), Bm, '-', label=r'$B_m$')
     # plt.legend()
@@ -279,3 +279,4 @@ if __name__ == "__main__":
     # plt.xlabel('Sequence length')
     # plt.ylabel('Average sequence fidelity')
         
+# %%
