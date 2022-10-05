@@ -28,6 +28,8 @@ from utils_tn import load_plot
 
 from RB_numerical_toy_model_v1 import clifford_sequence_with_noise, gen_randH
 
+from reproduce_210705403 import non_Markovian_theory_Fm
+
 def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=tn.Node(1), delta=8, nM=True, update_all=True, adam1=0.9, adam2=0.999, init_noise=None, optimizer="Adam", noise_model="nM", sys_dim=2, bond_dim=2, coeff=1, test=False):
 
     start_time = datetime.now()
@@ -53,9 +55,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     # init_noise.insert(0, np.identity(4, dtype=complex))
 
     if noise_model == "nM":
-        noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
+        # noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
+        noise_u = noise_nonM_unitary(m, J=1.2, hx=1.17, hy=-1.15, delta=0.1)
     elif noise_model == "randH" and nM == True:
-        # Should fix one, somehow it did not use the same.
+        # Should fix one, somehow it did not use the same. (This is fixed, I think.)
         # H = np.random.random((4,4)) + 1j*np.random.random((4,4))
         # H = H @ np.conj(H.T)
         # noise_u = linalg.expm(-1j*0.05*H)
@@ -89,6 +92,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     #%%
     # nM = True
     if nM == True:
+        # """
         F_e = np.zeros((m, sample_size))
         I_gate = np.identity(bond_dim, dtype=complex)
 
@@ -105,7 +109,16 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
                 F_e[n-1, sam] = np.trace(proj_O @ f_sys_state).real
         std_exp = np.std(F_e, axis=1)
         F_exp = np.mean(F_e, axis=1)
+        # """
+        """
+        # theory nM ASF
+        nonM_theory_Fm = non_Markovian_theory_Fm(noise_u, proj_O, rho, I, sys_dim)
         # print(F_exp)
+        F_exp = np.zeros(m)
+        std_exp = np.zeros(m)
+        for n in range(m):
+            F_exp[n] = nonM_theory_Fm.theory_Fm(n)
+        """
     else:
         if noise_model == "AD":
             Marko = np.load("data/Markovian_m80_amp_damp_p0.06_unitary_samp100.npz")

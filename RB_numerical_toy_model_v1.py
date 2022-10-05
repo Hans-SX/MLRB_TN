@@ -19,7 +19,7 @@ class noise_model():
         self.para = noise_para
         self.seed = seed
         
-    def apply_noise(self, state, randH):
+    def apply_noise(self, state, randH=None):
         if self.mode == 'depolar':
             # model = self._depolarizing_noise(state)
             model = self._depolarizing_noise_v2(state)
@@ -137,10 +137,15 @@ def gen_randH(seed):
 #%%
 if __name__ == "__main__":
     
+    """
+    Somehow the following did not work, too busy to figure it out now.
+    But I already have some outcome of Markovian random Hamiltonian noise. -- 2022/10/4.
+    """
+
     # noise_mode = 'depolar'
-    # noise_mode = 'amp_damp'
+    noise_mode = 'amp_damp'
     # noise_mode = 'p_flip'
-    noise_mode = 'randH'
+    # noise_mode = 'randH'
     randH = gen_randH(5)
     noise_para = 0.06
     
@@ -155,7 +160,7 @@ if __name__ == "__main__":
     # rho = np.array([[1,1],[1,1]])/2 + 1j*np.zeros((2,2))
     proj_O = np.kron(ket_0, ket_0.T)        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
 
-    M = 10
+    M = 60
     sample_size = int(20)
     fm = np.zeros((M, sample_size))
     # u = []
@@ -173,7 +178,9 @@ if __name__ == "__main__":
         test_var_samp = []
         for m in range(1, M+1):
 
-            tmp_rho, inver_op, noise_type, tmp_u = sequence_with_noise(m, rho, noise_mode, noise_para, seed+i, randH)
+            # tmp_rho, inver_op, noise_type, tmp_u = sequence_with_noise(m, rho, noise_mode, noise_para, seed+i)
+            tmp_rho, inver_op, noise_type, tmp_u = clifford_sequence_with_noise(m, rho, noise_mode, noise_para, seed+i, randH)
+            
             usamp.append(tmp_u)
             tmp_rho = inver_op @ tmp_rho @ np.conj(inver_op).T
 
