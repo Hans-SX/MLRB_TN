@@ -3,9 +3,6 @@
 """
 Created on Tue Sep 6 09:58:54 2022
 
-The MPS part not done yet.
-Still figuring a reasonable way to do it properly.
-
 @author: sxyang
 """
 #%%
@@ -292,7 +289,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
                 tmp_node += tilde_theta_2[til_theta]
             avg_tilde_theta_2 = tmp_node /sample_size
 
-            grad2 += beta_pn * avg_tilde_theta_2
+            # grad2 += beta_pn * avg_tilde_theta_2
+            grad2 += beta_pn * tmp_node
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
         cost = sum(((F[k] - F_exp) * coeff_on_cost)**2)
@@ -412,6 +410,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # fname = fname + "_load_cb"
         # for m=20 replace1, lazy to make it general.
         fname = fname + "_load_cb2_1"
+
+    sum_or_avg = "sum"
+    if sum_or_avg == "sum":
+        fname = fname + "_sum"
 
     costs = np.asarray(costs)
     end_time = datetime.now()
