@@ -287,9 +287,11 @@ def plot_for_read(F_exp, norm_std, F, m, noise, up_ind, fname):
 
 def load_plot(fname, m, noise_model, save, samples=100):
     data = np.load('data/' + fname +'.npz')
-    F_exp = data['F_exp']
+    F_exp = np.mean(data['F_exp'], axis=0)
+    # F_exp = data['F_exp']
     std_exp = data['std_exp']
-    F = data['F']
+    F = np.mean(data['F'], axis=1)
+    # F = data['F']
     costs = data['costs']
     # noise_ten = data['noise_ten']
     # all_sigs = data['all_sigs']

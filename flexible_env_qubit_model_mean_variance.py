@@ -229,7 +229,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             pn = m-l
             if pn == 0:
                 break
-            exclude_2 = [i-l, i+1-l]
+            exclude_2 = [i-l, i-l+1]
             # beta_pn = (F_exp[:, pn-1] - F[k, :, pn-1]) * coeff_on_cost[pn-1]  # F[k, :, pn-1] is not averaged.
             tilde_theta_2 = []
             tilde_ctr = dict()
@@ -284,41 +284,39 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
                 tt2_reorder = list(map(lambda name: tilde_theta_2[sam][name], L_axis_names))
                 tilde_theta_2[sam].reorder_edges(tt2_reorder)
             
+            # Use insert to put pn = 0, 1, ... in an ascending order (same as F).
             tilde_theta.insert(0, tilde_theta_2.copy())
-
-            # tmp_s = np.zeros([sys_dim]*4, dtype=complex)
-            # tmp_e = np.zeros(bond_dim, dtype=complex)
-            # tmp_node = np.tensordot(tmp_e, tmp_s, axes=0)
-            # tmp_node = tn.Node(np.tensordot(tmp_node, tmp_e, axes=0))
-            # for til_theta in tilde_theta_2:
-            #     tmp_node += tilde_theta_2[til_theta]
-            # # avg_tilde_theta_2 = tmp_node /sample_size
-
-            # avg_beta_pn = np.mean(beta_pn)
-            # gm += avg_beta_pn * tmp_node
 
         cost = 0
         var_model = np.var(F[k, :, :], axis=0).reshape(m, 1)
         var_diff = var_exp - var_model
-        gv2 = np.zeros(L.shape)
-        gv = np.zeros(L.shape)
-        gm = np.zeros(L.shape)
+        gv2 = np.zeros(L.shape, dtype=complex)
+        gv = np.zeros(L.shape, dtype=complex)
+        gm = np.zeros(L.shape, dtype=complex)
         beta_pn = (F_exp - F[k, :, :]) * coeff_on_cost
         beta_pn = np.mean(beta_pn, axis=0)
-        tmp_tilde = np.zeros(L.shape)
-        for n in range(m):
+        sum_samp_grad_tilde = np.zeros(L.shape, dtype=complex)
+        sum_samp_f_grad = np.zeros(L.shape, dtype=complex)
+
+        """
+        Following part is the derivative of Cmv cost function. Cmv is the regression of mean and variance.
+        """
+        # ------------------------------------------------------------------------------------
+        for n in range(i+1):
             for sam in range(sample_size):
-                gv2 += (2 * F[k,sam,n] -1) * tilde_theta[sam][n].tensor
-                tmp_tilde += tilde_theta[sam][n].tensor
-            gv += var_diff[n] * gv2
-            gm += beta_pn * tmp_tilde
+                sum_samp_grad_tilde += tilde_theta[n][sam].tensor
+                # tmp_tilde += tilde_theta[n][sam].tensor
+                sum_samp_f_grad += F[k, sam, n] * tilde_theta[n][sam].tensor
+            gv += var_diff[n] * 2 * (sum_samp_f_grad / sample_size - np.sum(F[k,:,n]) * sum_samp_grad_tilde / sample_size**2)
+            gm += beta_pn[n] * sum_samp_grad_tilde
+        # ------------------------------------------------------------------------------------
             
-        grad = gm + gv / sample_size
+        grad = gm + gv
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
-        cost = np.sum(((F[k] - F_exp) * coeff_on_cost)**2) + np.sum((var_exp - var_model)**2)
+        cost = np.sum(((F[k] - F_exp) / sample_size * coeff_on_cost)**2) + np.sum((var_exp - var_model)**2)
         # cost = sum((F[k] - F_exp)**2)
-        costs.append(cost/2)
+        costs.append(cost.real/2)
         tmpagf = order4_to_2(lamdas[0].tensor, sys_dim, bond_dim)
         # Averaged gate fidelity
         agf[k] = (abs(np.trace(tmpagf))**2 + dim) / (dim**2 + dim)
@@ -388,7 +386,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             lamdas[2*(m+2)-1-i] = uh_prime
             lamdas[2*(m+2)-1-(i+1)] = v_prime
 
-        beta = sum(abs(F[k] - F_exp))
+        beta = np.sum(abs(F[k] - F_exp))
         if nM == True:
             if beta <= np.sum(std_exp/np.sqrt(sample_size)) / delta:
                 # Note that if sample_size=1, std_exp=0, the condition did not work.
@@ -461,15 +459,15 @@ if __name__ == '__main__':
     optimizer = "Adam"
     nM = True
     rand_seed = 5
-    updates = 50
-    sample_size = 10
+    updates = 20
+    sample_size = 5
     update_all = True
     noise_model = "nM"
     init_noise = None
     delta = 2
     sys_dim = 2
     bond_dim = 4
-    test = False
+    test = True
     coeff = 1
 
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)

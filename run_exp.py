@@ -10,7 +10,7 @@ import tensornetwork as tn
 import argparse
 from finite_memory_contr_by_node_func import estimate_noise_via_sweep
 # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
-from flexible_env_qubit_model import estimate_noise_via_sweep_envq
+from flexible_env_qubit_model_mean_variance import estimate_noise_via_sweep_envq
 
 # Initialize parser.
 parser = argparse.ArgumentParser()
