@@ -12,6 +12,7 @@ import random
 from datetime import datetime
 from random import randint
 from scipy import linalg
+from scipy.stats import unitary_group
 # from scipy.stats import unitary_group
 import tensornetwork as tn
 # import matplotlib.pyplot as plt
@@ -46,6 +47,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     if type(init_noise) == type(None):
         init_noise = np.identity(dim, dtype=complex)
         lfile = False
+    elif type(init_noise) == str:
+        lfile = False
     else:
         lfile = True
     # init_noise = noise_nonM_unitary(m-1, J=1.2, hx=1.17, hy=-1.15, delta=0.05)
@@ -61,6 +64,19 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # noise_u = linalg.expm(-1j*0.05*H)
         noise_u = np.load("data/randH_seed5.npy")
         noise_model = "randH_seed5"
+    
+    if init_noise == "rand":
+        fn_init = init_noise
+        init_noise = unitary_group.rvs(sys_dim*bond_dim)
+    elif init_noise == "model":
+        if bond_dim == 4:
+            fn_init = init_noise
+            init_noise = np.kron(np.identity(2), noise_u[0])
+        elif bond_dim == 2:
+            fn_init = init_noise
+            init_noise = noise_u[0]
+    else:
+        fn_init = None
     # noise_u = np.identity(sys_dim * bond_dim, dtype=complex)
     # noise_u = unitary_group.rvs(4)
     # init_noise = noise_u.copy()
@@ -288,6 +304,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         var_model = np.var(F[k, :, :], axis=0).reshape(m, 1)
         gk = np.zeros(L.shape, dtype=complex)
         gl = np.zeros(L.shape, dtype=complex)
+        gm = np.zeros(L.shape, dtype=complex)
         beta_pn = (F_exp - F[k, :, :]) * coeff_on_cost
         beta_pn = np.mean(beta_pn, axis=0)
         sum_samp_grad_tilde = np.zeros(L.shape, dtype=complex)
@@ -302,8 +319,9 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             weight_grad_var = 1/(2 * var_model[n]**2) + var_exp[n]**2 / (2 * var_model[n]**4) - beta_pn[n]**2 / (2 * var_model[n]**4)
             gk += weight_grad_var * grad_var
             gl += beta_pn[n] / var_model[n]**2 * sum_samp_grad_tilde /sample_size
-            
-        grad = gk + gl
+            gm += beta_pn[n] * sum_samp_grad_tilde / sample_size
+        
+        grad = gk + gl + gm
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
         cost = np.sum(((F[k] - F_exp) / sample_size * coeff_on_cost)**2) + np.sum((var_exp - var_model)**2)
@@ -423,7 +441,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # fname = fname + "_load_cb"
         # for m=20 replace1, lazy to make it general.
         fname = fname + "_load_cb2_1"
-
+     
+    if fn_init != None:
+        fname = fname + "_" + fn_init + "_init"
+    fname = fname + "_KLM"
     costs = np.asarray(costs)
     end_time = datetime.now()
     duration = end_time - start_time

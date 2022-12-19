@@ -329,7 +329,9 @@ def plot_inset(F_exp, norm_std, F, m, noise_model, up_ind, costs, fname, save):
     # ax1.legend(loc='upper right')
     ax1.grid()
     if save == True:
-        plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
+        plt.savefig("figures/" + fname + ".pdf", format="pdf", bbox_inches="tight")
+    elif save == "png":
+        plt.savefig("figures/" + fname + ".png", format="png", bbox_inches="tight")
     plt.show()
 
 def plot_inset_violin(F, m, noise, up_ind, costs, fname, save):

@@ -8,7 +8,9 @@ from turtle import update
 import numpy as np
 import tensornetwork as tn
 import argparse
-from finite_memory_contr_by_node_func import estimate_noise_via_sweep
+from scipy.stats import unitary_group
+from utils_tn import plot_inset
+# from finite_memory_contr_by_node_func import estimate_noise_via_sweep
 # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
 from flexible_env_qubit_model_KL_divergence import estimate_noise_via_sweep_envq
 
@@ -35,6 +37,7 @@ parser.add_argument('--bond_dim', type=int, default=2)
 # coeff for making (F - F_exp) smaller, m>30.
 parser.add_argument('--coeff', type=int, default=1)
 parser.add_argument('--test', default=False)
+parser.add_argument('--init_noise', default=None)
 
 # Read arguments from command line.
 args = parser.parse_args()
@@ -54,6 +57,7 @@ noise_model = args.noise_model
 bond_dim = args.bond_dim
 coeff = args.coeff
 test = args.test
+init_noise = args.init_noise
 
 sys_dim = 2
 delta = 5
@@ -62,13 +66,24 @@ if args.lfile:
     data = np.load(lfname)
     min_ind = np.where(data['costs']==min(data['costs']))[0][0]
     init_noise = data['noise_ten'][min_ind]
-else:
-    init_noise = None
+# else:
+#     init_noise = None
 # print('updat_all?', update_all)
 # exit()
 
 # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
 F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
+
+F_exp = np.mean(F_exp, axis=0)
+F = np.mean(F, axis=1)
+
+min_cost_ind = np.where(costs == min(costs))
+min_cost_ind = min_cost_ind[0][0]
+print("min cost & ind", costs[min_cost_ind], min_cost_ind)
+print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
+norm_std = std_exp / np.sqrt(sample_size)
+print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
+plot_inset(F_exp.real, norm_std.real, F.real, m, noise_model, min_cost_ind, costs, fname, "png")
 
 print(fname)
