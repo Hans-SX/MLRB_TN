@@ -174,7 +174,7 @@ def pop_no_contract_edg(exclude, ctr_edg, lam_edg):
 
 def not_contract_edgs(exclude_lams):
     # exclude_lams: a list of max length 2, indicates which nodes we don't contract.
-    # Pop out in reverse order, so that they sill not affect the order of the remainings.
+    # Pop out in reverse order, so that they will not affect the order of the remainings.
     if len(exclude_lams) == 2:
         pop_e_edgs = [exclude_lams[1]+1, exclude_lams[1], exclude_lams[0]]
         pop_s_edgs = [2*exclude_lams[1]+1, 2*exclude_lams[1], 2*exclude_lams[0]+1, 2*exclude_lams[0]]
