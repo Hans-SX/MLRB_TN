@@ -327,6 +327,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # u_mar = np.trace(lamdas[i].tensor, axis1=0, axis2=2)
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
+        # the cost is not Cm + KL, it's Cm + Cvar. Needs to be changed!!!!!
         cost = np.sum(((F[k] - F_exp) / sample_size * coeff_on_cost)**2) + np.sum((var_exp - var_model)**2)
         # cost = sum((F[k] - F_exp)**2)
         costs.append(cost.real/2)
