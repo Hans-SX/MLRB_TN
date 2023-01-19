@@ -102,7 +102,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         control_n = []
 
     # -------------------- Generate the F_exp here -------------
-    #%%
+    #
     # nM = True
     if nM == True:
         # """
@@ -196,7 +196,6 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     #     mh_adam = np.zeros((bond_dim, sys_dim, sys_dim, sys_dim, sys_dim, bond_dim),dtype=complex)
     #     vh_adam = np.zeros((bond_dim, sys_dim, sys_dim, sys_dim, sys_dim, bond_dim),dtype=complex)
 
-    #%%
     for k in range(0, updates):
         for node in lamdas:
             node.fresh_edges(node.axis_names)
@@ -307,29 +306,30 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         var_model = np.var(F[k, :, :], axis=0).reshape(m, 1)
         gk = np.zeros(L.shape, dtype=complex)
         gl = np.zeros(L.shape, dtype=complex)
-        gm = np.zeros(L.shape, dtype=complex)
+        gM = np.zeros(L.shape, dtype=complex)
         beta_pn = (F_exp - F[k, :, :]) * coeff_on_cost
         beta_pn = np.mean(beta_pn, axis=0)
-        sum_samp_grad_tilde = np.zeros(L.shape, dtype=complex)
-        sum_samp_f_grad = np.zeros(L.shape, dtype=complex)
+        sum_samp_tilde_theta = np.zeros(L.shape, dtype=complex)
+        sum_samp_f_minus_F_tilde_theta = np.zeros(L.shape, dtype=complex)
 
         for n in range(i+1):
             for sam in range(sample_size):
-                sum_samp_grad_tilde += tilde_theta[n][sam].tensor
+                sum_samp_tilde_theta += tilde_theta[n][sam].tensor
                 # tmp_tilde += tilde_theta[n][sam].tensor
-                sum_samp_f_grad += F[k, sam, n] * tilde_theta[n][sam].tensor
-            grad_var = 2 * (sum_samp_f_grad / sample_size - np.sum(F[k,:,n]) * sum_samp_grad_tilde / sample_size**2)
-            weight_grad_var = 1/(2 * var_model[n]**2) + var_exp[n]**2 / (2 * var_model[n]**4) - beta_pn[n]**2 / (2 * var_model[n]**4)
-            gk += weight_grad_var * grad_var
-            gl += beta_pn[n] / var_model[n]**2 * sum_samp_grad_tilde /sample_size
-            gm += beta_pn[n] * sum_samp_grad_tilde / sample_size
+                sum_samp_f_minus_F_tilde_theta += (F[k, sam, n] - np.mean(F[k, :, n])) * tilde_theta[n][sam].tensor
+            weight = 1/var_model[n] - (var_exp[n] + beta_pn[n]**2) / var_model[n]**2
+            gk += weight * sum_samp_f_minus_F_tilde_theta
+            gl += beta_pn[n] * sum_samp_tilde_theta / var_model[n]**2 
+            gM += (np.mean(markF[k, :, n] - F[k, :, n])) * sum_samp_tilde_theta
         
-        grad = gk + gl + gm
+        grad = (gk + gl + gM) / sample_size
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
-        cost = np.sum(((F[k] - F_exp) / sample_size * coeff_on_cost)**2) + np.sum((var_exp - var_model)**2) + np.sum(((F[k] - markF[k]) / sample_size * coeff_on_cost)**2)
+        cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0) * coeff_on_cost)/2
+        kl = np.sum(np.log(var_model / var_exp) + (var_exp + beta_pn**2) / var_model + 1)/2
+        cost = kl + cM
         # cost = sum((F[k] - F_exp)**2)
-        costs.append(cost.real/2)
+        costs.append(cost.real)
         tmpagf = order4_to_2(lamdas[0].tensor, sys_dim, bond_dim)
         # Averaged gate fidelity
         agf[k] = (abs(np.trace(tmpagf))**2 + dim) / (dim**2 + dim)

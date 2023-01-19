@@ -399,7 +399,9 @@ class rand_clifford_sequence_markovianized_asf:
             inver_op = inver_op @ np.conj(rand_clifford[i]).T
             
         tmp_rho = self._unitary_map(tmp_rho, inver_op)
-        tmp_rho = self._unitary_map(np.kron(comp_sys, tmp_rho), noise_u[n])
+        noise_dim = noise_u[n].shape[0]
+        comp_noise = np.identity(int(self.dim/noise_dim), dtype=complex)
+        tmp_rho = self._unitary_map(np.kron(comp_sys, tmp_rho), np.kron(comp_noise, noise_u[n]))
         tmp_rho = self._trace_E(tmp_rho)
         return tmp_rho
 
@@ -411,7 +413,7 @@ class rand_clifford_sequence_markovianized_asf:
             
         for sam in range(sample_size):
             for n in range(self.m):
-                tmp_rho = self._rand_clifford_sequence_markovianized_list(n+1, noise_u, sam_clif[sam, :n+1])
+                tmp_rho = self._rand_clifford_sequence_markovianized_list(n, noise_u[:n+1], sam_clif[sam, :n+1])
                 markF[sam, n] = np.trace(self.proj_O @ tmp_rho).real
         return markF
 """
