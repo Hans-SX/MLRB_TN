@@ -13,6 +13,10 @@ from scipy import linalg
 import tensornetwork as tn
 import matplotlib.pyplot as plt
 
+"""
+The order of counting the ket is |000>, |001>, ...
+since reshape is strarting from row elements.
+"""
 
 def single_cliffords():
     clifford_list = [ np.identity(2, dtype=complex),
@@ -359,6 +363,80 @@ def plot_inset_violin(F, m, noise, up_ind, costs, fname, save):
     if save == True:
         plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
     plt.show()
+
+class rand_clifford_sequence_markovianized_asf:
+    def __init__(self, m, rho_s, proj_O, sys_dim=2, bond_dim=2) -> None:
+        self.m = m
+        self.proj_O = proj_O
+        self.tmp_rho = rho_s
+        self.envd = bond_dim
+        self.sysd = sys_dim
+        self.env_sys = [bond_dim, sys_dim, bond_dim, sys_dim]
+        self.dim = sys_dim * bond_dim
+        
+        # self.comp_noise = np.identity(int(self.dim/noise_dim), dtype=complex)
+    def _unitary_map(self, rho, unitary):
+        return unitary @ rho @ np.conj(unitary).T
+    
+    def _trace_E(self, rho):
+        return np.trace(rho.reshape(self.env_sys), axis1=0, axis2=2)
+
+    def _rand_clifford_sequence_markovianized_list(self, n, noise_u, rand_clifford):
+        # apply unitary noise in the sequence
+        # Each step has different noise as indicate by the list.
+        # dim = sys_dim * bond_dim
+        # tmp_rho = rho_s
+        inver_op = np.eye(self.sysd)
+        comp_sys = np.identity(self.envd, dtype=complex) / 2
+        # I_gate = np.identity(self.envd, dtype=complex)
+        tmp_rho = self.tmp_rho
+        for i in range(n):
+            noise_dim = noise_u[i].shape[0]
+            comp_noise = np.identity(int(self.dim/noise_dim), dtype=complex)
+            tmp_rho = self._unitary_map(tmp_rho, rand_clifford[i])
+            tmp_rho = self._unitary_map(np.kron(comp_sys, tmp_rho), np.kron(comp_noise, noise_u[i]))
+            tmp_rho = self._trace_E(tmp_rho)
+            inver_op = inver_op @ np.conj(rand_clifford[i]).T
+            
+        tmp_rho = self._unitary_map(tmp_rho, inver_op)
+        tmp_rho = self._unitary_map(np.kron(comp_sys, tmp_rho), noise_u[n])
+        tmp_rho = self._trace_E(tmp_rho)
+        return tmp_rho
+
+    def markovianized_asf(self, sam_clif, noise_u):
+        sample_size = sam_clif.shape[0]
+        markF = np.zeros((sample_size, self.m))
+        if type(noise_u) != type([]):
+            noise_u = [noise_u] * (self.m + 1)
+            
+        for sam in range(sample_size):
+            for n in range(self.m):
+                tmp_rho = self._rand_clifford_sequence_markovianized_list(n+1, noise_u, sam_clif[sam, :n+1])
+                markF[sam, n] = np.trace(self.proj_O @ tmp_rho).real
+        return markF
+"""
+# For testing rand_clifford_sequence_markovianized_asf class. Done!!!!!!!!!!!!!!!!!!!!!!!!!
+import numpy as np
+from utils_tn import rand_clifford_sequence_markovianized_asf, noise_nonM_unitary
+from RB_numerical_toy_model_v1 import clifford_sequence_with_noise
+from utils_tn import single_cliffords
+from random import randint
+
+m = 10
+noise_u = noise_nonM_unitary(10, J=1.2, hx=1.17, hy=-1.15, delta=0.1)
+sample_size = 100
+clifford_list = single_cliffords()
+
+sam_clif = np.zeros((sample_size, m, 2, 2), dtype=complex)
+for sam in range(sample_size):
+    for i in range(m):
+        sam_clif[sam, i] = clifford_list[randint(0,23)]
+
+rho_s = np.array([[1, 0], [0, 0]], dtype=complex)
+proj_O = np.array([[1, 0], [0, 0]], dtype=complex)
+markovianized = rand_clifford_sequence_markovianized_asf(m, rho_s, proj_O, 2, 2)
+markF = markovianized.markovianized_asf(sam_clif, noise_u)
+"""
 
 """
 The following should be added to tensornetwork/network_operations.
