@@ -22,7 +22,7 @@ from utils_tn import edges_btw_ctr_nois, edges_in_lamdas
 from utils_tn import order4_to_2, single_cliffords
 from utils_tn import contract_by_nodes, noise_nonM_unitary
 from utils_tn import unitary_map, rand_clifford_sequence_unitary_noise_list
-from utils_tn import load_plot, rand_clifford_sequence_markovianized_asf
+from utils_tn import load_plot_non_Markovianity, rand_clifford_sequence_markovianized_asf
 
 from RB_numerical_toy_model_v1 import clifford_sequence_with_noise, gen_randH
 
@@ -486,13 +486,13 @@ if __name__ == '__main__':
     delta = 2
     sys_dim = 2
     bond_dim = 4
-    test = True
+    test = False
     coeff = 1
 
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 
 
-    # data, F_exp, norm_std, F, costs = load_plot_non_Markovianity(fname, m, noise_model, False, sample_size)
+    data, F_exp, norm_std, F, costs = load_plot_non_Markovianity(fname, m, noise_model, False, sample_size)
 
 # %%

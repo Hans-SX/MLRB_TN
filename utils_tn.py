@@ -371,7 +371,7 @@ def load_plot_non_Markovianity(fname, m, noise_model, save, samples=100):
     F = np.mean(data['F'], axis=1)
     costs = data['costs']
     markF_exp = np.mean(data['markF_exp'], axis=0)
-    nonMarkovianity = data['nonMarkovianity']
+    nonMarkovianity = data['nonM']
 
     min_cost_ind = np.where(costs == min(costs))
     min_cost_ind = min_cost_ind[0][0]
