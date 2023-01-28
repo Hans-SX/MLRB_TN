@@ -73,14 +73,18 @@ if args.lfile:
 
 # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 F_exp = np.mean(F_exp, axis=0)
 F = np.mean(F, axis=1)
+markF_exp = np.mean(markF_exp, axis=0)
+markF = np.mean(markF, axis=1)
 
 min_cost_ind = np.where(costs == min(costs))
 min_cost_ind = min_cost_ind[0][0]
-print("min cost & ind", costs[min_cost_ind], min_cost_ind)
+eval = np.sum((markF_exp - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]
+print("min cost & min non-Markovianity & ind", costs[min_cost_ind], nonMarkovianity[min_cost_ind], min_cost_ind)
+print("CM(exp) - CM(model) = ", eval)
 print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
 norm_std = std_exp / np.sqrt(sample_size)
 print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))

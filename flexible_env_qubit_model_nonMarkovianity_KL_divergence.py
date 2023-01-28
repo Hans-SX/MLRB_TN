@@ -174,6 +174,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         but ideally, the control tensor is the average of all samples might be fine.
         """
 
+    markovianized = rand_clifford_sequence_markovianized_asf(m, rho_s, proj_O, sys_dim, bond_dim)
+    markF_exp = markovianized.markovianized_asf(sam_clif, noise_u)
     # ----------------------------------------------------------
     """
     Make F allow complex, but it should be zero on img.
@@ -188,6 +190,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     costs = []
     all_sigs = []
     noise_ten = []
+    nonMarkovianity = []
     if optimizer == "AdaGrad":
         tmppregrads = np.zeros((bond_dim, sys_dim, sys_dim, sys_dim, sys_dim, bond_dim),dtype=complex)
     elif optimizer == "Adam":
@@ -210,8 +213,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         i = m - (k % m) - 1
         tmp_F = np.zeros((sample_size, 1), dtype=complex)
         tmp_Fn = np.zeros((sample_size, m-1), dtype=complex)
-        markovianized = rand_clifford_sequence_markovianized_asf(m, rho_s, proj_O, sys_dim, bond_dim)
-        markF[k] = markovianized.markovianized_asf(sam_clif, noise_u)
+        tmp_noise = list(map(lambda x: order4_to_2(lamdas[x].tensor, sys_dim, bond_dim), np.arange(m+1)))
+        markF[k] = markovianized.markovianized_asf(sam_clif, tmp_noise)
         for sam in range(sample_size):
             # edges for constructing Fm, m = m.
             e_edgs = edges_in_lamdas(lamdas, m)
@@ -325,7 +328,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         grad = (gk + gl + gM) / sample_size
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
-        cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0) * coeff_on_cost)/2
+        cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0)**2 * coeff_on_cost)/2
+        nonMarkovianity.append(cM.real)
         kl = np.sum(np.log(var_model / var_exp) + (var_exp + beta_pn**2) / var_model + 1)/2
         cost = kl + cM
         # cost = sum((F[k] - F_exp)**2)
@@ -420,7 +424,6 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         # if (k+1) % 10 == 0:
         #     print(str(k+1) + " updates finished.")
 
-
     if nM == True:
         fname = "m"+ str(m) + "_dimE" + str(bond_dim) + "_lr" + str(lr.tensor.real) + "_updates" + str(updates) + "_sample" + str(sample_size) + "_seed" + str(rand_seed)
     else:
@@ -455,13 +458,13 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     
     if test == False:
         if type(noise_u) == type([]):
-            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration)
+            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp)
         else:
-            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u)
+            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp)
 
     
     print('Duration: {}'.format(duration))
-    return F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname
+    return F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity
 
 #%%
 if __name__ == '__main__':
@@ -486,10 +489,10 @@ if __name__ == '__main__':
     test = True
     coeff = 1
 
-    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
+    F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 
 
-    data, F_exp, norm_std, F, costs = load_plot(fname, m, noise_model, False, sample_size)
+    # data, F_exp, norm_std, F, costs = load_plot_non_Markovianity(fname, m, noise_model, False, sample_size)
 
 # %%

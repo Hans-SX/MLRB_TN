@@ -364,6 +364,28 @@ def plot_inset_violin(F, m, noise, up_ind, costs, fname, save):
         plt.savefig(fname + "_ASF.pdf", format="pdf", bbox_inches="tight")
     plt.show()
 
+def load_plot_non_Markovianity(fname, m, noise_model, save, samples=100):
+    data = np.load('data/' + fname +'.npz')
+    F_exp = np.mean(data['F_exp'], axis=0)
+    std_exp = data['std_exp']
+    F = np.mean(data['F'], axis=1)
+    costs = data['costs']
+    markF_exp = np.mean(data['markF_exp'], axis=0)
+    nonMarkovianity = data['nonMarkovianity']
+
+    min_cost_ind = np.where(costs == min(costs))
+    min_cost_ind = min_cost_ind[0][0]
+    eval = np.sum((markF_exp - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]
+    print("min cost & min non-Markovianity & ind", costs[min_cost_ind], nonMarkovianity[min_cost_ind], min_cost_ind)
+    print("CM(exp) - CM(model) = ", eval)
+    print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
+    norm_std = std_exp / np.sqrt(samples)
+    print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))
+    plot_inset(F_exp.real, norm_std.real, F.real, m, noise_model, min_cost_ind, costs, fname, save)
+
+    
+    return data, F_exp, norm_std, F, costs
+
 class rand_clifford_sequence_markovianized_asf:
     def __init__(self, m, rho_s, proj_O, sys_dim=2, bond_dim=2) -> None:
         self.m = m
@@ -387,7 +409,7 @@ class rand_clifford_sequence_markovianized_asf:
         # dim = sys_dim * bond_dim
         # tmp_rho = rho_s
         inver_op = np.eye(self.sysd)
-        comp_sys = np.identity(self.envd, dtype=complex) / 2
+        comp_sys = np.identity(self.envd, dtype=complex) / (self.dim/self.sysd)
         # I_gate = np.identity(self.envd, dtype=complex)
         tmp_rho = self.tmp_rho
         for i in range(n):
