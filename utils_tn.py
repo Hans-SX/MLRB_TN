@@ -67,6 +67,8 @@ def initialized_lamdas_tn(m, noise_u, rho_e, sys_dim=2, bond_dim=2):
     lamdas = []
     lamdas.append(tn.Node(rho_e, name='rho_e', axis_names=['e0', 'r0']))
     if type(noise_u) == type([]):
+        # the length of noise list = m+2, and the first one could be Markovian or identity. It is the coupling from preparation rather than process. ---> It doesnt' affect anything since we only use it from identity to update noise tensor. But it did cause problem when I want to check whether ( I tensor U_nM) and (U_nM) will lead to the same ASF behavior.
+        # ---> It did affect while updating lamdas, I input the new unitay to this function. Thus, lamda0 is also updated. 
         for i in range(m+2):
             # e(m+2) = r(m+2), the out most edge.
             tmp = order2_to_4(noise_u[i], sys_dim, bond_dim)
@@ -174,7 +176,6 @@ def pop_no_contract_edg(exclude, ctr_edg, lam_edg):
         pop_s_edgs, pop_e_edgs = not_contract_edgs(exclude)
         pop_out(lam_edg, pop_e_edgs)
         pop_out(ctr_edg, pop_s_edgs)
-
 
 def not_contract_edgs(exclude_lams):
     # exclude_lams: a list of max length 2, indicates which nodes we don't contract.
@@ -375,7 +376,7 @@ def load_plot_non_Markovianity(fname, m, noise_model, save, samples=100):
 
     min_cost_ind = np.where(costs == min(costs))
     min_cost_ind = min_cost_ind[0][0]
-    eval = np.sum((markF_exp - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]
+    eval = (np.sum((markF_exp - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]) / np.sum((markF_exp - F_exp)**2 / 2)
     print("min cost & min non-Markovianity & ind", costs[min_cost_ind], nonMarkovianity[min_cost_ind], min_cost_ind)
     print("CM(exp) - CM(model) = ", eval)
     print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))

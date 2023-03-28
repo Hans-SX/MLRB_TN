@@ -12,7 +12,8 @@ from scipy.stats import unitary_group
 from utils_tn import plot_inset
 # from finite_memory_contr_by_node_func import estimate_noise_via_sweep
 # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
-from flexible_env_qubit_model_KL_divergence import estimate_noise_via_sweep_envq
+# from flexible_env_qubit_model_KL_divergence import estimate_noise_via_sweep_envq
+from flexible_env_qubit_model_nonMarkovianity_KL_divergence import estimate_noise_via_sweep_envq
 
 # Initialize parser.
 parser = argparse.ArgumentParser()
@@ -30,7 +31,7 @@ parser.add_argument('--fname', type=str, default='m20_lr3.0_updates2000_sample10
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
-parser.add_argument('--samps', type=int, default=50)
+parser.add_argument('--samps', type=int, default=200)
 parser.add_argument('--update_all', default=True)
 parser.add_argument('--noise_model', type=str, default="nM")
 parser.add_argument('--bond_dim', type=int, default=2)
@@ -62,6 +63,11 @@ init_noise = args.init_noise
 sys_dim = 2
 delta = 5
 
+# if args.init_noise == "randu":
+#     init_noise = unitary_group.rvs(bond_dim * sys_dim)
+# else:
+#     init_noise = args.init_noise
+
 if args.lfile:
     data = np.load(lfname)
     min_ind = np.where(data['costs']==min(data['costs']))[0][0]
@@ -82,9 +88,9 @@ markF = np.mean(markF, axis=1)
 
 min_cost_ind = np.where(costs == min(costs))
 min_cost_ind = min_cost_ind[0][0]
-eval = np.sum((markF_exp - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]
+eval = 100 * (np.sum((np.mean(markF_exp, axis=0) - F_exp)**2 / 2) - nonMarkovianity[min_cost_ind]) / np.sum((markF_exp - F_exp)**2 / 2)
 print("min cost & min non-Markovianity & ind", costs[min_cost_ind], nonMarkovianity[min_cost_ind], min_cost_ind)
-print("CM(exp) - CM(model) = ", eval)
+print("(CM(exp) - CM(model)/CM(exp)) x 100% = ", eval)
 print("sum(|F[min]-F_exp|) = ", sum(abs(F[min_cost_ind] - F_exp)))
 norm_std = std_exp / np.sqrt(sample_size)
 print("Num of outside error bar", sum(abs(F[min_cost_ind] - F_exp) > norm_std))

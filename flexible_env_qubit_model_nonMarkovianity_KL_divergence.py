@@ -65,9 +65,14 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         noise_u = np.load("data/randH_seed5.npy")
         noise_model = "randH_seed5"
     
-    if init_noise == "rand":
+    if init_noise == "randu":
         fn_init = init_noise
-        init_noise = unitary_group.rvs(sys_dim*bond_dim)
+        init_noise = np.load("randu_init.npz")
+        if bond_dim == 4:
+            init_noise = init_noise["dim8"]
+        elif bond_dim == 2:
+            init_noise = init_noise["dim4"]
+        
     elif init_noise == "model":
         if bond_dim == 4:
             fn_init = init_noise
@@ -175,7 +180,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         """
 
     markovianized = rand_clifford_sequence_markovianized_asf(m, rho_s, proj_O, sys_dim, bond_dim)
-    markF_exp = markovianized.markovianized_asf(sam_clif, noise_u)
+    if nM == True:
+        markF_exp = markovianized.markovianized_asf(sam_clif, noise_u)
+    else:
+        markF_exp = F_exp.copy()
     # ----------------------------------------------------------
     """
     Make F allow complex, but it should be zero on img.
@@ -184,8 +192,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     agf = np.zeros(updates)
     markF = np.zeros((updates, sample_size, m), dtype=complex)
 
-    coeff_on_cost = np.ones(m)
-    coeff_on_cost[30:] = 1/coeff
+    # coeff_on_cost = np.ones(m)
+    # coeff_on_cost[30:] = 1/coeff
     grads = []
     costs = []
     all_sigs = []
@@ -310,7 +318,8 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         gk = np.zeros(L.shape, dtype=complex)
         gl = np.zeros(L.shape, dtype=complex)
         gM = np.zeros(L.shape, dtype=complex)
-        beta_pn = (F_exp - F[k, :, :]) * coeff_on_cost
+        # beta_pn = (F_exp - F[k, :, :]) * coeff_on_cost
+        beta_pn = (F_exp - F[k, :, :])
         beta_pn = np.mean(beta_pn, axis=0)
         sum_samp_tilde_theta = np.zeros(L.shape, dtype=complex)
         sum_samp_f_minus_F_tilde_theta = np.zeros(L.shape, dtype=complex)
@@ -325,13 +334,19 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
             gl += beta_pn[n] * sum_samp_tilde_theta / var_model[n]**2 
             gM += (np.mean(markF[k, :, n] - F[k, :, n])) * sum_samp_tilde_theta
         
-        grad = (gk + gl + gM) / sample_size
+        grad = (gk + gl) / sample_size / m + gM / sample_size
 
         # Not only cost, the gradient also need to apply coeff_on_cost.
-        cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0)**2 * coeff_on_cost)/2
+        # cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0)**2 * coeff_on_cost)/2
+        cM = np.sum(np.mean(markF[k, :, :] - F[k, :, :], axis=0)**2)/2
         nonMarkovianity.append(cM.real)
         kl = np.sum(np.log(var_model / var_exp) + (var_exp + beta_pn**2) / var_model + 1)/2
-        cost = kl + cM
+        # Found that KL tends to give larger values, 1e1 with random initial noise.
+        # And non-Markovianity tends to give values around 1e-3. Give some weights to balance them.
+        # print("kl", kl)
+        # print("cM", cM)
+        # cost = kl / m / sample_size + cM * m
+        cost = kl / m / sample_size + cM
         # cost = sum((F[k] - F_exp)**2)
         costs.append(cost.real)
         tmpagf = order4_to_2(lamdas[0].tensor, sys_dim, bond_dim)
@@ -449,8 +464,9 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         fname = fname + "_load_cb2_1"
      
     if fn_init != None:
-        fname = fname + "_" + fn_init + "_init"
-    fname = fname + "_KLM"
+        fname = fname + "_init_" + fn_init + ""
+    
+    fname = fname + "_cost_KL_nM"
     costs = np.asarray(costs)
     end_time = datetime.now()
     duration = end_time - start_time
@@ -458,9 +474,9 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     
     if test == False:
         if type(noise_u) == type([]):
-            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp)
+            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp, init_noise=init_noise)
         else:
-            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp)
+            np.savez("data/" + fname, F_exp=F_exp, std_exp=std_exp, F=F, all_sigs=all_sigs, costs=costs, grads=grads, noise_ten=noise_ten, Duration=Duration, noise_u=noise_u, nonM=nonMarkovianity, markF=markF, markF_exp=markF_exp, init_noise=init_noise)
 
     
     print('Duration: {}'.format(duration))
@@ -470,8 +486,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
 if __name__ == '__main__':
 
     # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
+    from scipy.stats import unitary_group
     import tensornetwork as tn
-    m = 3
+    
+    m = 5
     lr = tn.Node(complex(0.01))
     adam1 = 0.9
     adam2 = 0.99
@@ -479,20 +497,21 @@ if __name__ == '__main__':
     nM = True
     rand_seed = 5
     updates = 20
-    sample_size = 5
+    sample_size = 50
     update_all = True
     noise_model = "nM"
-    init_noise = None
     delta = 2
     sys_dim = 2
-    bond_dim = 4
-    test = False
+    bond_dim = 2
+    init_noise = None
+    # init_noise = "randu"
+    test = True
     coeff = 1
 
     F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
 
 
 
-    data, F_exp, norm_std, F, costs = load_plot_non_Markovianity(fname, m, noise_model, False, sample_size)
+    # data, F_exp, norm_std, F, costs = load_plot_non_Markovianity(fname, m, noise_model, False, sample_size)
 
 # %%
