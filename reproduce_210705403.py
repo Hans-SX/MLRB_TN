@@ -195,6 +195,7 @@ if __name__ == "__main__":
     
     ds = 2   # dim(rho_s)
     de = 2
+    # de = 4
     # J = 1.7
     # hx = 1.47
     # hy = -1.05
@@ -220,7 +221,7 @@ if __name__ == "__main__":
     rho = np.kron(np.kron(ket_0, np.conj(ket_0.T)), np.kron(ket_0, np.conj(ket_0.T)))
     proj_O = np.kron(ket_0, np.conj(ket_0.T))        # np.kron(ket_0, ket_0.T) - np.kron(ket_1, ket_1.T)
     
-    M = 60
+    M = 40
     #====================================================
     #====================================================
     # # This part generate data and caculate ASF. To debug, don't need to run this part.

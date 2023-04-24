@@ -9,6 +9,7 @@ import numpy as np
 import tensornetwork as tn
 import argparse
 from scipy.stats import unitary_group
+import random
 from utils_tn import plot_inset
 # from finite_memory_contr_by_node_func import estimate_noise_via_sweep
 # from flexible_env_qubit_model import estimate_noise_via_sweep_envq
@@ -27,7 +28,7 @@ parser.add_argument('--opt', type=str, default='AdaGrad')
 parser.add_argument('--lfile', type=bool, default=False)
 # To continue from a current best for the replace pair case,
 # need some effort. The initial noise should not take the one corresponding to the min_ind.
-parser.add_argument('--fname', type=str, default='m20_lr3.0_updates2000_sample100_seed5_replace_1_nM_load_cb.npz')
+parser.add_argument('--fname', type=str, default='./data/m10_dimE4_lr0.001_updates3000_sample200_seed5_Ada_replace_1_nM_init_randu_cost_KL_frob_wb_1_nM.npz')
 parser.add_argument('--nM', default=True)
 parser.add_argument('--seed', type=int, default=5)
 parser.add_argument('--ups', type=int, default=50)
@@ -39,6 +40,7 @@ parser.add_argument('--bond_dim', type=int, default=2)
 parser.add_argument('--coeff', type=int, default=1)
 parser.add_argument('--test', default=False)
 parser.add_argument('--init_noise', default=None)
+parser.add_argument('--weight_frob', type=float, default=1)
 
 # Read arguments from command line.
 args = parser.parse_args()
@@ -59,6 +61,7 @@ bond_dim = args.bond_dim
 coeff = args.coeff
 test = args.test
 init_noise = args.init_noise
+wb = args.weight_frob
 
 sys_dim = 2
 delta = 5
@@ -71,7 +74,8 @@ delta = 5
 if args.lfile:
     data = np.load(lfname)
     min_ind = np.where(data['costs']==min(data['costs']))[0][0]
-    init_noise = data['noise_ten'][min_ind]
+    init_noise = data['noise_ten'][min_ind-1]
+    # random.seed(10)
 # else:
 #     init_noise = None
 # print('updat_all?', update_all)
@@ -79,7 +83,7 @@ if args.lfile:
 
 # F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname = estimate_noise_via_sweep(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model)
 
-F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test)
+F_exp, std_exp, F, all_sigs, costs, noise_ten, Duration, fname, markF, markF_exp, nonMarkovianity = estimate_noise_via_sweep_envq(m, updates, sample_size, rand_seed, lr, delta, nM, update_all, adam1, adam2, init_noise, optimizer, noise_model, sys_dim, bond_dim, coeff, test, wb)
 
 F_exp = np.mean(F_exp, axis=0)
 F = np.mean(F, axis=1)

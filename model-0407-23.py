@@ -67,12 +67,11 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     
     if init_noise == "randu":
         fn_init = init_noise
-        init_noise = np.load("./load_data/randu_init.npz")
+        init_noise = np.load("load_data/randu_init.npz")
         if bond_dim == 4:
             init_noise = init_noise["dim8"]
         elif bond_dim == 2:
             init_noise = init_noise["dim4"]
-    # ~~~~~~~~ adding bond_dim = 8 ~~~~~~~~~
         
     elif init_noise == "model":
         if bond_dim == 4:
@@ -111,7 +110,10 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
     #
     # nM = True
     if nM == True:
-        # """
+        data = np.load("load_data/")
+        F_exp = data["F_exp"]
+        var_exp = data["var_exp"]
+        """
         F_e = np.zeros((m, sample_size))
         I_gate = np.identity(bond_dim, dtype=complex)
 
@@ -130,9 +132,9 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
         var_exp = np.var(F_e, axis=1).reshape(m, 1)
         std_exp = np.std(F_e, axis=1)
         # F_exp = np.mean(F_e, axis=1)
-        # """
         """
-        # theory nM ASF -> no gate sequence whcih causes issue -> X, since our model output f_i -> mena(sum f_i) -> should be the same.
+        """
+        # theory nM ASF
         nonM_theory_Fm = non_Markovian_theory_Fm(noise_u, proj_O, rho, I, sys_dim)
         # print(F_exp)
         F_exp = np.zeros(m)
@@ -328,9 +330,7 @@ def estimate_noise_via_sweep_envq(m, updates, sample_size=100, rand_seed=5, lr=t
 
         for n in range(i+1):
             for sam in range(sample_size):
-                # sum_samp_tilde_theta += tilde_theta[n][sam].tensor
-                # 4/19, 23, Transpose for gradient of complex matrix.
-                sum_samp_tilde_theta += np.conj(tilde_theta[n][sam].tensor.T)
+                sum_samp_tilde_theta += tilde_theta[n][sam].tensor
                 # tmp_tilde += tilde_theta[n][sam].tensor
                 sum_samp_f_minus_F_tilde_theta += (F[k, sam, n] - np.mean(F[k, :, n])) * tilde_theta[n][sam].tensor
             weight = 1/var_model[n] - (var_exp[n] + beta_pn[n]**2) / var_model[n]**2
@@ -498,7 +498,7 @@ if __name__ == '__main__':
     import tensornetwork as tn
     from utils_tn import plot_inset
     
-    m = 3
+    m = 10
     lr = tn.Node(complex(0.01))
     adam1 = 0.9
     adam2 = 0.99
@@ -511,7 +511,7 @@ if __name__ == '__main__':
     noise_model = "nM"
     delta = 2
     sys_dim = 2
-    bond_dim = 8
+    bond_dim = 2
     # init_noise = None
     init_noise = "randu"
     test = True
